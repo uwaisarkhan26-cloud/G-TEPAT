@@ -100,6 +100,10 @@ export const Header: React.FC<HeaderProps> = ({
           <BadgeIcon className="w-3 h-3" />
           <span>{badge.label}</span>
         </span>
+        <span className="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-xs">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>SISTEM AKTIF SEPENUHNYA</span>
+        </span>
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2.5">

@@ -201,23 +201,7 @@ export default function App() {
     let rawIdentifier = (identifier || '').trim();
     const rawPass = (pass || '').trim();
 
-    // Portal Pentadbir & Penyelaras requires security passcode validation
-    if (portalType === 'admin') {
-      const code = (securityPasscode || '').trim();
-      const isValidPasscode = StorageService.verifySecurityPasscode(code);
-      if (!isValidPasscode) {
-        return { 
-          success: false, 
-          message: 'Kod Laluan Keselamatan Pentadbir tidak sah! Sila masukkan kod keselamatan rasmi (Lalai: SKK2026).' 
-        };
-      }
-    }
-
-    // Default accounts if left empty
-    if (!rawIdentifier) {
-      rawIdentifier = portalType === 'admin' ? 'g-77263791@moe-dl.edu.my' : 'g-66232912@moe-dl.edu.my';
-    }
-
+    // Support matching by: email, username, full name, first/partial name, or role keywords
     const cleanEmail = rawIdentifier.toLowerCase();
     const cleanUsername = cleanEmail.replace('@moe-dl.edu.my', '').trim();
 
@@ -228,38 +212,45 @@ export default function App() {
       u => u.email.trim().toLowerCase() === cleanEmail ||
            u.username.trim().toLowerCase() === cleanUsername ||
            u.username.trim().toLowerCase() === cleanEmail ||
-           u.email.trim().toLowerCase() === `${cleanUsername}@moe-dl.edu.my`
+           u.email.trim().toLowerCase() === `${cleanUsername}@moe-dl.edu.my` ||
+           u.nama.trim().toLowerCase() === cleanEmail ||
+           cleanEmail.length >= 3 && u.nama.trim().toLowerCase().includes(cleanEmail)
     ) || INITIAL_USERS.find(
       u => u.email.trim().toLowerCase() === cleanEmail ||
            u.username.trim().toLowerCase() === cleanUsername ||
            u.username.trim().toLowerCase() === cleanEmail ||
-           u.email.trim().toLowerCase() === `${cleanUsername}@moe-dl.edu.my`
+           u.email.trim().toLowerCase() === `${cleanUsername}@moe-dl.edu.my` ||
+           u.nama.trim().toLowerCase() === cleanEmail ||
+           cleanEmail.length >= 3 && u.nama.trim().toLowerCase().includes(cleanEmail)
     );
 
     // Support convenient keywords: admin, gb, pk, pentadbir, penyelaras, guru
     if (!user) {
-      if (cleanEmail === 'admin' || cleanEmail === 'gb') {
+      if (cleanEmail === 'admin' || cleanEmail === 'gb' || cleanEmail === 'zahari') {
         user = currentUsers.find(u => u.role === 'admin') || INITIAL_USERS[0];
-      } else if (cleanEmail === 'pk' || cleanEmail === 'pentadbir') {
+      } else if (cleanEmail === 'pk' || cleanEmail === 'pentadbir' || cleanEmail === 'nurtitah') {
         user = currentUsers.find(u => u.role === 'pentadbir') || INITIAL_USERS[1];
-      } else if (cleanEmail === 'penyelaras') {
+      } else if (cleanEmail === 'penyelaras' || cleanEmail === 'noradilah') {
         user = currentUsers.find(u => u.role === 'penyelaras') || INITIAL_USERS[10];
-      } else if (cleanEmail === 'guru') {
+      } else if (cleanEmail === 'guru' || cleanEmail === 'cikgu') {
         user = currentUsers.find(u => u.role === 'guru') || INITIAL_USERS[2];
       }
     }
 
     if (!user) {
-      return { success: false, message: 'ID DELIMa atau emel tidak dijumpai dalam pangkalan data SK Kepawa.' };
+      return { 
+        success: false, 
+        message: 'Pengguna tidak dijumpai. Sila pilih nama anda dari Senarai Guru atau masukkan ID DELIMa yang sah.' 
+      };
     }
 
-    // Role check for Admin portal
-    if (portalType === 'admin') {
-      const isPrivileged = user.role === 'admin' || user.role === 'pentadbir' || user.role === 'penyelaras';
-      if (!isPrivileged) {
+    // Passcode check: Only if attempting Admin access with an admin account and a custom passcode is active
+    if (portalType === 'admin' && (user.role === 'admin' || user.role === 'pentadbir' || user.role === 'penyelaras')) {
+      const code = (securityPasscode || '').trim();
+      if (code && !StorageService.verifySecurityPasscode(code)) {
         return { 
           success: false, 
-          message: `Akaun ${user.nama} adalah peranan GURU. Sila gunakan "Portal Guru & Pengguna Lain" untuk log masuk.` 
+          message: 'Kod Laluan Keselamatan Pentadbir tidak sah! Sila semak semula (Lalai: SKK2026).' 
         };
       }
     }

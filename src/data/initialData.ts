@@ -562,5 +562,8 @@ export const INITIAL_SETTINGS: SystemSettings = {
   tahun_sesi: '2026',
   toleransi_lewat_minit: 5,
   guru_besar: 'MOHD ZAHARI BIN TIBIN',
-  pk_pentadbiran: 'NURTITAH BINTI MEMBUAI'
+  pk_pentadbiran: 'NURTITAH BINTI MEMBUAI',
+  sistem_aktif: true,
+  status_operasional: 'AKTIF SEPENUHNYA (100% OPERASIONAL)',
+  mod_akses: 'AKSES PENUH TERBUKA UNTUK SEMUA GURU'
 };

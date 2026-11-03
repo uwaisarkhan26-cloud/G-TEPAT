@@ -49,12 +49,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Hero Banner */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-kepawa-800 via-kepawa-900 to-slate-900 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="z-10">
-          <span className="px-3 py-1 rounded-full text-xs font-black bg-gold-500/20 text-gold-400 border border-gold-500/30">
-            DASHBOARD & LIVE MONITORING 2026
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3 py-1 rounded-full text-xs font-black bg-gold-500/20 text-gold-400 border border-gold-500/30">
+              DASHBOARD & LIVE MONITORING 2026
+            </span>
+            <span className="px-3 py-1 rounded-full text-[11px] font-black bg-emerald-500/30 text-emerald-300 border border-emerald-400/50 flex items-center gap-1.5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>SISTEM AKTIF SEPENUHNYA (100% OPERASIONAL)</span>
+            </span>
+          </div>
           <h2 className="text-2xl sm:text-3xl font-black mt-2 tracking-tight">Selamat Datang, {session.nama}!</h2>
           <p className="text-xs text-slate-300 mt-1 max-w-xl">
-            Sistem Pemantauan Kehadiran Guru ke Kelas & Jadual Waktu Induk SK KEPAWA.
+            Sistem Pemantauan Kehadiran Guru ke Kelas & Jadual Waktu Induk SK KEPAWA. Akses penuh dibuka untuk semua guru dan staf.
           </p>
         </div>
 

@@ -84,6 +84,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span>SK KEPAWA</span>
               </h1>
               <span className="text-[10px] text-gold-400 font-extrabold tracking-wider uppercase">G-TEPAT 2026</span>
+              <span className="flex items-center gap-1 text-[9px] text-emerald-400 font-bold mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                AKTIF SEPENUHNYA
+              </span>
             </div>
           </div>
           {onCloseMobile && (

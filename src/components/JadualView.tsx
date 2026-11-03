@@ -423,7 +423,7 @@ export const JadualView: React.FC<JadualViewProps> = ({
             )}
 
             {/* Teacher selector for 'teacher' view */}
-            {viewMode === 'teacher' && isAdminOrPk && (
+            {viewMode === 'teacher' && (
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-slate-500">Pilih Guru:</span>
                 <select
@@ -729,7 +729,7 @@ export const JadualView: React.FC<JadualViewProps> = ({
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-kepawa-600" />
               <span className="text-xs font-black uppercase text-slate-800 tracking-wider">
-                {viewMode === 'class' ? `Jadual Waktu Kelas: ${selectedClassFilter}` : `Jadual Mengajar: ${isAdminOrPk ? selectedTeacherFilter : session.nama}`}
+                {viewMode === 'class' ? `Jadual Waktu Kelas: ${selectedClassFilter}` : `Jadual Mengajar: ${selectedTeacherFilter || session.nama}`}
               </span>
             </div>
             <span className="text-[11px] font-bold text-slate-500">

@@ -88,6 +88,9 @@ export interface SystemSettings {
   toleransi_lewat_minit: number;
   guru_besar: string;
   pk_pentadbiran: string;
+  sistem_aktif?: boolean;
+  status_operasional?: string;
+  mod_akses?: string;
 }
 
 export interface SessionData {

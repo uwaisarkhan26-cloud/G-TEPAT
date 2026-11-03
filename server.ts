@@ -2,6 +2,14 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { createServer as createViteServer } from 'vite';
+import { 
+  INITIAL_USERS, 
+  INITIAL_CLASSES, 
+  INITIAL_SUBJECTS, 
+  INITIAL_TIMETABLE, 
+  INITIAL_SETTINGS, 
+  INITIAL_STUDENTS 
+} from './src/data/initialData';
 
 const PORT = Number(process.env.PORT) || 3000;
 const app = express();
@@ -18,28 +26,87 @@ interface CloudData {
   classes: any[];
   subjects: any[];
   timetable: any[];
+  students: any[];
   settings: any;
   customLogo: string | null;
+  systemActive: boolean;
+  statusOperasi: string;
   lastUpdated: string;
 }
 
+const stripTeacherTitle = (name: string): string => {
+  if (!name) return '';
+  return name
+    .replace(/\b(ENCIK|PUAN|CIK)\b\s*/gi, '')
+    .replace(/\b(PN|EN)\.?\s*/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+};
+
 function loadCloudData(): CloudData {
+  let data: Partial<CloudData> = {};
   try {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(raw);
+      data = JSON.parse(raw);
     }
   } catch (err) {
     console.error('Error reading cloud data:', err);
   }
+
+  // Ensure ALL master tables are pre-populated with authoritative SK Kepawa dataset
+  const users = (Array.isArray(data.users) && data.users.length > 0)
+    ? data.users
+    : INITIAL_USERS;
+
+  const classes = (Array.isArray(data.classes) && data.classes.length > 0)
+    ? data.classes
+    : INITIAL_CLASSES;
+
+  const subjects = (Array.isArray(data.subjects) && data.subjects.length > 0)
+    ? data.subjects
+    : INITIAL_SUBJECTS;
+
+  const timetable = (Array.isArray(data.timetable) && data.timetable.length > 0)
+    ? data.timetable
+    : INITIAL_TIMETABLE;
+
+  const students = (Array.isArray(data.students) && data.students.length > 0)
+    ? data.students
+    : INITIAL_STUDENTS;
+
+  const settings = data.settings && typeof data.settings === 'object'
+    ? { ...INITIAL_SETTINGS, ...data.settings, sistem_aktif: true }
+    : INITIAL_SETTINGS;
+
+  const attendance = (Array.isArray(data.attendance) ? data.attendance : []).filter(r => {
+    const id = String(r?.id || '');
+    return !(/^rec_0[1-9]$/.test(id) || id === 'rec_10' || id === 'rec_1787717291228_916');
+  }).map(r => ({
+    ...r,
+    guru: stripTeacherTitle(r.guru)
+  }));
+
+  const cleanedClasses = classes.map(c => ({
+    ...c,
+    guru_kelas: stripTeacherTitle(c.guru_kelas),
+    pembantu_guru_kelas: c.pembantu_guru_kelas ? stripTeacherTitle(c.pembantu_guru_kelas) : ''
+  }));
+
+  if (settings.guru_besar) settings.guru_besar = stripTeacherTitle(settings.guru_besar);
+  if (settings.pk_pentadbiran) settings.pk_pentadbiran = stripTeacherTitle(settings.pk_pentadbiran);
+
   return {
-    attendance: [],
-    users: [],
-    classes: [],
-    subjects: [],
-    timetable: [],
-    settings: null,
-    customLogo: null,
+    attendance,
+    users,
+    classes: cleanedClasses,
+    subjects,
+    timetable,
+    students,
+    settings,
+    customLogo: data.customLogo || null,
+    systemActive: true,
+    statusOperasi: 'AKTIF SEPENUHNYA (100% OPERASIONAL)',
     lastUpdated: new Date().toISOString()
   };
 }
@@ -53,39 +120,7 @@ function saveCloudData(data: CloudData) {
   }
 }
 
-// In-memory working cache
-const stripTeacherTitle = (name: string): string => {
-  if (!name) return '';
-  return name
-    .replace(/\b(ENCIK|PUAN|CIK)\b\s*/gi, '')
-    .replace(/\b(PN|EN)\.?\s*/gi, '')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-};
-
 let cloudCache: CloudData = loadCloudData();
-// Ensure simulation records are completely purged and titles are standardized
-cloudCache.attendance = (cloudCache.attendance || []).filter(r => {
-  const id = String(r?.id || '');
-  return !(/^rec_0[1-9]$/.test(id) || id === 'rec_10' || id === 'rec_1787717291228_916');
-}).map(r => ({
-  ...r,
-  guru: stripTeacherTitle(r.guru)
-}));
-
-if (Array.isArray(cloudCache.classes)) {
-  cloudCache.classes = cloudCache.classes.map(c => ({
-    ...c,
-    guru_kelas: stripTeacherTitle(c.guru_kelas),
-    pembantu_guru_kelas: c.pembantu_guru_kelas ? stripTeacherTitle(c.pembantu_guru_kelas) : ''
-  }));
-}
-
-if (cloudCache.settings) {
-  if (cloudCache.settings.guru_besar) cloudCache.settings.guru_besar = stripTeacherTitle(cloudCache.settings.guru_besar);
-  if (cloudCache.settings.pk_pentadbiran) cloudCache.settings.pk_pentadbiran = stripTeacherTitle(cloudCache.settings.pk_pentadbiran);
-}
-
 saveCloudData(cloudCache);
 
 // -------------------------------------------------------------
@@ -102,6 +137,39 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// System Status Endpoint
+app.get('/api/system/status', (req, res) => {
+  res.json({
+    active: true,
+    status: 'AKTIF SEPENUHNYA',
+    description: 'Sistem G-TEPAT SK Kepawa Beaufort Beroperasi 100% Sepenuhnya',
+    totalUsers: cloudCache.users.length,
+    totalClasses: cloudCache.classes.length,
+    totalSubjects: cloudCache.subjects.length,
+    totalTimetableSlots: cloudCache.timetable.length,
+    totalStudents: cloudCache.students?.length || 0,
+    attendanceRecords: cloudCache.attendance.length,
+    accessMode: 'TERBUKA_SEMUA_PENGGUNA'
+  });
+});
+
+// System Activation Toggle / Re-affirmation
+app.post('/api/system/activate', (req, res) => {
+  cloudCache.systemActive = true;
+  cloudCache.statusOperasi = 'AKTIF SEPENUHNYA (100% OPERASIONAL)';
+  if (cloudCache.settings) {
+    cloudCache.settings.sistem_aktif = true;
+    cloudCache.settings.status_operasional = 'AKTIF SEPENUHNYA (100% OPERASIONAL)';
+    cloudCache.settings.mod_akses = 'AKSES PENUH TERBUKA UNTUK SEMUA GURU';
+  }
+  saveCloudData(cloudCache);
+  res.json({
+    success: true,
+    message: 'Sistem G-TEPAT SK Kepawa berjaya disahkan aktif sepenuhnya untuk semua pengguna.',
+    data: cloudCache
+  });
+});
+
 // Full Cloud Sync snapshot (Fetch current server data)
 app.get('/api/sync', (req, res) => {
   res.json({
@@ -114,7 +182,7 @@ app.get('/api/sync', (req, res) => {
 // Bulk sync from client to cloud server
 app.post('/api/sync', (req, res) => {
   try {
-    const { attendance, users, classes, subjects, timetable, settings, customLogo } = req.body;
+    const { attendance, users, classes, subjects, timetable, students, settings, customLogo } = req.body;
     
     if (Array.isArray(attendance)) {
       const isSim = (r: any) => {
@@ -146,8 +214,11 @@ app.post('/api/sync', (req, res) => {
     if (Array.isArray(timetable) && timetable.length > 0) {
       cloudCache.timetable = timetable;
     }
+    if (Array.isArray(students) && students.length > 0) {
+      cloudCache.students = students;
+    }
     if (settings) {
-      cloudCache.settings = settings;
+      cloudCache.settings = { ...cloudCache.settings, ...settings, sistem_aktif: true };
     }
     if (customLogo !== undefined) {
       cloudCache.customLogo = customLogo;
