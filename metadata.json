@@ -1,0 +1,10 @@
+{
+  "name": "Remix Remix G-TEPAT SK KEPAWA",
+  "description": "Sistem Pengurusan \u0026 Pemantauan Kehadiran PdP Guru SK KEPAWA 2026 dengan Cetakan Laporan Formal",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
