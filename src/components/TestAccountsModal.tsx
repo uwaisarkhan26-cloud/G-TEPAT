@@ -54,7 +54,7 @@ export const TestAccountsModal: React.FC<TestAccountsModalProps> = ({
               <div
                 key={user.id}
                 onClick={() => {
-                  onSelectAccount(user.email, 'Guru#2026!');
+                  onSelectAccount(user.email, 'XBA6019');
                   onClose();
                 }}
                 className={`p-3.5 rounded-2xl border transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-2 group ${bgClass}`}
@@ -80,7 +80,7 @@ export const TestAccountsModal: React.FC<TestAccountsModalProps> = ({
                     {idx + 1}. {user.nama}
                   </div>
                   <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                    {user.email} | Pass: <code className="bg-white px-1.5 py-0.5 rounded border font-bold text-slate-800">Guru#2026!</code>
+                    {user.email} | Pass Sementara: <code className="bg-white px-1.5 py-0.5 rounded border font-bold text-slate-800">XBA6019</code>
                   </div>
                 </div>
 

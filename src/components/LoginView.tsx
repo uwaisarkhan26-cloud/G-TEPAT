@@ -10,21 +10,16 @@ import {
   Image as ImageIcon, 
   Camera, 
   RotateCcw,
-  Shield,
   ShieldCheck,
   GraduationCap,
   Users,
   CheckCircle2,
-  HelpCircle,
   QrCode,
   X,
-  Zap,
-  Check,
   Search,
-  UserCheck,
-  School,
-  Activity,
-  Layers
+  ChevronDown,
+  ChevronUp,
+  Shield
 } from 'lucide-react';
 import { SchoolLogo } from './SchoolLogo';
 import { INITIAL_USERS } from '../data/initialData';
@@ -40,11 +35,12 @@ interface LoginViewProps {
   ) => Promise<{ success: boolean; message: string }>;
   onOpenTestAccounts: () => void;
   onOpenLogoManager?: () => void;
-  onOpenResetPassword?: () => void;
+  onOpenResetPassword?: (user?: User) => void;
   onOpenResetModal?: () => void;
   onShowToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   pendingScanClass?: string | null;
   onSetPendingScanClass?: (className: string) => void;
+  users?: User[];
 }
 
 export const LoginView: React.FC<LoginViewProps> = ({
@@ -55,109 +51,85 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onOpenResetModal,
   onShowToast,
   pendingScanClass,
-  onSetPendingScanClass
+  onSetPendingScanClass,
+  users = INITIAL_USERS
 }) => {
-  // Modes: 'pilih-guru' (Default 1-Click for all teachers), 'manual' (Manual ID DELIMa / Email), 'pentadbir' (Admin / Penyelaras)
-  const [activeTab, setActiveTab] = useState<'pilih-guru' | 'manual' | 'pentadbir'>('pilih-guru');
-  const [teacherSearch, setTeacherSearch] = useState('');
-  const [isLoginScannerOpen, setIsLoginScannerOpen] = useState(false);
-  
-  // Credentials for manual input
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [securityPasscode, setSecurityPasscode] = useState('SKK2026');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasscode, setShowPasscode] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  // Active Panel: 'admin' (Panel Pentadbir) or 'guru' (Panel Pengguna Lain / Guru)
+  const [activePanel, setActivePanel] = useState<'admin' | 'guru'>('guru');
+
+  // Admin Panel states
+  const [adminIdentifier, setAdminIdentifier] = useState('g-66232912@moe-dl.edu.my');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+
+  // Other Users / Guru Panel states
+  const [guruIdentifier, setGuruIdentifier] = useState('');
+  const [guruPassword, setGuruPassword] = useState('');
+  const [showGuruPassword, setShowGuruPassword] = useState(false);
+  // General states
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
+  const [isLoginScannerOpen, setIsLoginScannerOpen] = useState(false);
 
-  // Filtered teachers list for quick 1-click access
-  const allTeachers = useMemo(() => {
-    return INITIAL_USERS.map(u => {
-      let roleDesc = 'Guru Akademik';
-      let tag = 'GURU';
-      let tagColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+  // Master users list
+  const activeUsers = users && users.length > 0 ? users : INITIAL_USERS;
 
-      if (u.role === 'admin') {
-        roleDesc = 'Guru Besar (Pentadbir Utama)';
-        tag = '👑 GURU BESAR';
-        tagColor = 'bg-purple-100 text-purple-900 border-purple-300';
-      } else if (u.role === 'pentadbir') {
-        roleDesc = 'Penolong Kanan Pentadbiran';
-        tag = '🏫 PK PENTADBIRAN';
-        tagColor = 'bg-amber-100 text-amber-900 border-amber-300';
-      } else if (u.role === 'penyelaras') {
-        roleDesc = 'Penyelaras G-TEPAT / Guru Kelas 1 Jingga';
-        tag = '⭐ PENYELARAS';
-        tagColor = 'bg-teal-100 text-teal-900 border-teal-300';
-      } else if (u.nama.includes('ROHIDAH')) {
-        roleDesc = 'Guru Kelas 4 Hijau / BM & Sains';
-      } else if (u.nama.includes('DAYANG SABARIAH')) {
-        roleDesc = 'Guru Kelas 5 Kuning / BM & Sejarah';
-      } else if (u.nama.includes('FAIRUZ')) {
-        roleDesc = 'Guru Pendidikan Islam (Tahun 6 & 4)';
-      } else if (u.nama.includes('ASNAH')) {
-        roleDesc = 'Guru Kelas 2 Biru / Bahasa Inggeris';
-      } else if (u.nama.includes('NORMAWATI')) {
-        roleDesc = 'Guru Kelas 3 Ungu / Bahasa Arab';
-      } else if (u.nama.includes('KHAYSAR')) {
-        roleDesc = 'Guru Bahasa Inggeris & PJ (Tahun 1 & 5)';
-      } else if (u.nama.includes('HABIBAH')) {
-        roleDesc = 'Guru Bahasa Inggeris (Tahun 3 & 4)';
-      } else if (u.nama.includes('SHAHERA')) {
-        roleDesc = 'Guru Matematik & RBT';
-      } else if (u.nama.includes('NORLIANA')) {
-        roleDesc = 'Guru Sains & Pendidikan Muzik';
-      } else if (u.nama.includes('SARIPAH')) {
-        roleDesc = 'Guru Pendidikan Islam & Tasmik';
-      }
-
-      return {
-        ...u,
-        roleDesc,
-        tag,
-        tagColor
-      };
-    });
-  }, []);
-
-  const filteredTeachers = useMemo(() => {
-    if (!teacherSearch.trim()) return allTeachers;
-    const q = teacherSearch.toLowerCase();
-    return allTeachers.filter(t => 
-      t.nama.toLowerCase().includes(q) ||
-      t.email.toLowerCase().includes(q) ||
-      t.username.toLowerCase().includes(q) ||
-      t.roleDesc.toLowerCase().includes(q)
+  // Admin users (Guru Besar, PK Pentadbiran, Penyelaras)
+  const adminUsers = useMemo(() => {
+    return activeUsers.filter(u => 
+      u.role === 'admin' || 
+      u.role === 'pentadbir' || 
+      u.role === 'penyelaras' ||
+      u.email.includes('66232912') ||
+      u.email.includes('84232913') ||
+      u.email.includes('54232922')
     );
-  }, [allTeachers, teacherSearch]);
+  }, [activeUsers]);
 
-  const handleQuickTeacherLogin = async (targetUser: User) => {
+  // Other users / Guru (10 teachers)
+  const otherUsers = useMemo(() => {
+    return activeUsers.filter(u => 
+      u.role !== 'admin' && 
+      u.role !== 'pentadbir' && 
+      u.role !== 'penyelaras' &&
+      !u.email.includes('66232912') &&
+      !u.email.includes('84232913') &&
+      !u.email.includes('54232922')
+    );
+  }, [activeUsers]);
+
+  // Handlers for Admin Login
+  const handleAdminSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsLoading(true);
-    setEmail(targetUser.email);
-    setPassword('Guru#2026!');
-    const portal = targetUser.role === 'admin' || targetUser.role === 'pentadbir' || targetUser.role === 'penyelaras' ? 'admin' : 'guru';
-    const passcode = portal === 'admin' ? 'SKK2026' : undefined;
 
-    const res = await onLogin(targetUser.email, 'Guru#2026!', rememberMe, passcode, portal);
+    const targetEmail = (adminIdentifier || '').trim() || 'g-66232912@moe-dl.edu.my';
+    const targetPass = (adminPassword || '').trim() || 'XBA6019';
+
+    const res = await onLogin(targetEmail, targetPass, rememberMe, targetPass, 'admin');
     setIsLoading(false);
     if (res.success) {
-      onShowToast(`Selamat Datang, ${targetUser.nama}! Akses penuh sistem diaktifkan.`, 'success');
+      onShowToast(res.message, 'success');
     } else {
       onShowToast(res.message, 'error');
     }
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
+  // Handlers for Other Users / Guru Login
+  const handleGuruSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsLoading(true);
 
-    const targetEmail = (email || '').trim() || (activeTab === 'pentadbir' ? 'g-77263791@moe-dl.edu.my' : 'g-66232912@moe-dl.edu.my');
-    const targetPass = (password || '').trim() || 'Guru#2026!';
-    const targetPasscode = (securityPasscode || '').trim() || 'SKK2026';
-    const portal = activeTab === 'pentadbir' ? 'admin' : 'guru';
+    const targetEmail = (guruIdentifier || '').trim();
+    if (!targetEmail) {
+      setIsLoading(false);
+      onShowToast('Sila pilih nama anda dari senarai atau masukkan ID DELIMa.', 'warning');
+      return;
+    }
 
-    const res = await onLogin(targetEmail, targetPass, rememberMe, targetPasscode, portal);
+    const targetPass = (guruPassword || '').trim() || 'XBA6019';
+
+    const res = await onLogin(targetEmail, targetPass, rememberMe, undefined, 'guru');
     setIsLoading(false);
     if (res.success) {
       onShowToast(res.message, 'success');
@@ -234,7 +206,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <span>STATUS: SISTEM AKTIF SEPENUHNYA (100% OPERASIONAL)</span>
               </span>
               <span className="text-[10px] text-emerald-100 font-medium block">
-                Akses dibuka untuk semua 13 Guru & Staf SK Kepawa (Sesi Persekolahan 2026)
+                Akses dibuka untuk semua 13 Guru & Pentadbir SK Kepawa Sesi 2026
               </span>
             </div>
           </div>
@@ -289,393 +261,279 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 IMBASAN KOD QR DIKESAN: KELAS {pendingScanClass}
               </h4>
               <p className="text-[10px] text-amber-800 mt-0.5 font-medium">
-                Sila klik nama anda di bawah untuk mengesahkan dan merekod kehadiran PdP kelas ini secara automatik.
+                Sila pilih akaun anda di bawah untuk mengesahkan dan merekod kehadiran PdP kelas ini secara automatik.
               </p>
             </div>
           </div>
         )}
 
-        {/* Access Modes Tabs */}
-        <div className="p-2 sm:p-2.5 bg-slate-900 border-b border-slate-800">
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-950 rounded-2xl border border-slate-800">
-            {/* TAB 1: PILIH NAMA GURU (1-KLIK) */}
+        {/* 2 DEDICATED PANELS: 1 ADMIN PANEL & 1 OTHER USERS PANEL */}
+        <div className="p-3 sm:p-5">
+          {/* Panel Selector Tabs */}
+          <div className="grid grid-cols-2 p-1.5 bg-slate-100 rounded-2xl mb-4 border border-slate-200">
+            {/* Tab 1: Panel Pentadbir (Admin) */}
             <button
               type="button"
-              onClick={() => setActiveTab('pilih-guru')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                activeTab === 'pilih-guru'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-lg ring-2 ring-emerald-400/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              onClick={() => setActivePanel('admin')}
+              className={`py-3 px-3 rounded-xl font-black text-xs transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                activePanel === 'admin'
+                  ? 'bg-gradient-to-r from-purple-700 to-indigo-800 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
-              <div className="flex items-center gap-1">
-                <Users className={`w-3.5 h-3.5 ${activeTab === 'pilih-guru' ? 'text-gold-300' : 'text-slate-400'}`} />
-                <span className="text-[11px] sm:text-xs">Pilih Guru</span>
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-amber-300" />
+                <span className="tracking-tight">PANEL 1: PENTADBIR</span>
               </div>
-              <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
-                activeTab === 'pilih-guru' ? 'bg-emerald-900/90 text-emerald-200' : 'text-slate-500'
-              }`}>
-                1-KLIK AKSES
+              <span className="text-[10px] opacity-80 font-medium">
+                Guru Besar & PK
               </span>
             </button>
 
-            {/* TAB 2: LOG MASUK MANUAL */}
+            {/* Tab 2: Panel Pengguna Lain (Guru) */}
             <button
               type="button"
-              onClick={() => setActiveTab('manual')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                activeTab === 'manual'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg ring-2 ring-blue-400/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+              onClick={() => setActivePanel('guru')}
+              className={`py-3 px-3 rounded-xl font-black text-xs transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                activePanel === 'guru'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
-              <div className="flex items-center gap-1">
-                <Mail className={`w-3.5 h-3.5 ${activeTab === 'manual' ? 'text-blue-300' : 'text-slate-400'}`} />
-                <span className="text-[11px] sm:text-xs">ID DELIMa</span>
+              <div className="flex items-center gap-1.5">
+                <GraduationCap className="w-4 h-4 text-emerald-200" />
+                <span className="tracking-tight">PANEL 2: PENGGUNA LAIN</span>
               </div>
-              <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
-                activeTab === 'manual' ? 'bg-blue-900/90 text-blue-200' : 'text-slate-500'
-              }`}>
-                MANUAL INPUT
-              </span>
-            </button>
-
-            {/* TAB 3: PENTADBIR & PENYELARAS */}
-            <button
-              type="button"
-              onClick={() => setActiveTab('pentadbir')}
-              className={`py-2 px-1.5 rounded-xl text-xs font-black transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
-                activeTab === 'pentadbir'
-                  ? 'bg-gradient-to-r from-purple-700 to-indigo-800 text-white shadow-lg ring-2 ring-purple-400/30'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                <ShieldCheck className={`w-3.5 h-3.5 ${activeTab === 'pentadbir' ? 'text-gold-400' : 'text-slate-400'}`} />
-                <span className="text-[11px] sm:text-xs">Pentadbir</span>
-              </div>
-              <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
-                activeTab === 'pentadbir' ? 'bg-purple-900/90 text-purple-200' : 'text-slate-500'
-              }`}>
-                KOD SKK2026
+              <span className="text-[10px] opacity-80 font-medium">
+                Guru & Staf
               </span>
             </button>
           </div>
-        </div>
 
-        {/* TAB CONTENT 1: PILIH NAMA GURU (INSTANT DIRECT 1-CLICK ACCESS) */}
-        {activeTab === 'pilih-guru' && (
-          <div className="p-4 sm:p-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3">
-              <div>
-                <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4 text-emerald-600" />
-                  <span>Senarai Guru SK Kepawa (Pilih Nama Anda Untuk Masuk)</span>
-                </h3>
-                <p className="text-[10px] text-slate-500">
-                  Semua 13 akaun guru berstatus AKTIF SEPENUHNYA. Klik mana-mana nama untuk log masuk serta-merta.
-                </p>
-              </div>
-              <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
-                13 Guru Berdaftar
-              </span>
-            </div>
-
-            {/* Quick search input */}
-            <div className="relative mb-3">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                <Search className="w-3.5 h-3.5" />
-              </div>
-              <input
-                type="text"
-                placeholder="Cari nama guru, subjek, atau peranan..."
-                value={teacherSearch}
-                onChange={(e) => setTeacherSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
-              />
-              {teacherSearch && (
-                <button
-                  onClick={() => setTeacherSearch('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Teacher Cards Grid */}
-            <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-              {filteredTeachers.map((teacher, idx) => (
-                <div
-                  key={teacher.id}
-                  onClick={() => handleQuickTeacherLogin(teacher)}
-                  className="p-2.5 sm:p-3 rounded-2xl border border-slate-200 hover:border-emerald-500 bg-slate-50/70 hover:bg-emerald-50/40 transition flex items-center justify-between gap-2.5 group cursor-pointer shadow-xs active:scale-98"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
-                      {teacher.nama.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-extrabold text-xs text-slate-900 group-hover:text-emerald-800 truncate">
-                          {idx + 1}. {teacher.nama}
-                        </span>
-                        <span className={`text-[9px] font-black px-1.5 py-0.2 rounded-full border ${teacher.tagColor}`}>
-                          {teacher.tag}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-slate-500 truncate mt-0.5 flex items-center gap-2">
-                        <span>{teacher.roleDesc}</span>
-                        <span className="text-slate-400">•</span>
-                        <span className="font-mono text-[9px] text-slate-400">{teacher.username}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 group-hover:bg-emerald-700 text-white text-[11px] font-black shadow-xs transition flex items-center gap-1 shrink-0"
-                  >
-                    <span>Masuk</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-              <span className="flex items-center gap-1 text-emerald-700 font-bold">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                Semua guru boleh log masuk tanpa sekatan
-              </span>
-              <button
-                type="button"
-                onClick={onOpenTestAccounts}
-                className="text-emerald-700 font-bold hover:underline flex items-center gap-1"
-              >
-                <Key className="w-3 h-3 text-gold-500" />
-                <span>Senarai Penuh & Kata Laluan</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* TAB CONTENT 2: MANUAL LOGIN (ID DELIMa / EMEL / NAMA GURU) */}
-        {activeTab === 'manual' && (
-          <div className="p-5 sm:p-6">
-            <div className="mb-3.5 text-center">
-              <h2 className="text-xs sm:text-sm font-black uppercase text-slate-800 tracking-wider flex items-center justify-center gap-1.5">
-                <Mail className="w-4 h-4 text-blue-600" />
-                <span>LOG MASUK ID DELIMa / EMEL GURU</span>
-              </h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">
-                Masukkan ID DELIMa rasmi (cth: g-xxxxxxxx@moe-dl.edu.my) atau nama guru anda.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[11px]">
-                  ID DELIMa / Emel / Nama Guru
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="g-xxxxxxxx@moe-dl.edu.my atau nama guru..."
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px]">
-                    Kata Laluan DELIMa
+          {/* ============================================================== */}
+          {/* PANEL 1: LOG MASUK PENTADBIR (ADMIN)                           */}
+          {/* ============================================================== */}
+          {activePanel === 'admin' && (
+            <div className="space-y-4 animate-fade-in">
+              {/* Admin Form */}
+              <form onSubmit={handleAdminSubmit} className="space-y-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200">
+                {/* ID DELIMa Field */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-purple-600" />
+                      <span>ID DELIMa Pentadbir</span>
+                    </span>
+                    <span className="text-[10px] text-purple-700 font-bold lowercase">
+                      @moe-dl.edu.my
+                    </span>
                   </label>
-                  <span className="text-[10px] text-slate-500">Lalai: Guru#2026!</span>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                    <Lock className="w-4 h-4" />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={adminIdentifier}
+                      onChange={(e) => setAdminIdentifier(e.target.value)}
+                      placeholder="g-66232912@moe-dl.edu.my atau nama..."
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 transition"
+                      required
+                    />
                   </div>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Masukkan Kata Laluan (Lalai: Guru#2026!)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
-                  />
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-purple-600" />
+                      <span>Kata Laluan Pentadbir</span>
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showAdminPassword ? 'text' : 'password'}
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      placeholder="Masukkan kata laluan..."
+                      className="w-full px-3.5 py-2.5 pr-10 bg-white border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-600 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPassword(!showAdminPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Action */}
+                <div className="pt-2">
                   <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    <span>LOG MASUK PENTADBIR</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
+              </form>
 
-              <div className="flex items-center justify-between text-xs pt-0.5">
-                <label className="flex items-center gap-2 text-slate-600 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                  />
-                  <span className="text-[11px] font-medium">Ingat saya pada peranti ini</span>
-                </label>
-
+              {/* Password Management & Reset Options for Admin */}
+              <div className="p-3 bg-purple-50 rounded-2xl border border-purple-200 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <Key className="w-4 h-4 text-purple-700 shrink-0" />
+                  <span className="text-[11px] text-purple-900 font-bold">
+                    Pengurusan Kata Laluan Pentadbir:
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
                     if (onOpenResetPassword) {
-                      onOpenResetPassword();
-                    } else {
-                      onShowToast('Kata laluan rasmi lalai bagi semua akaun adalah: Guru#2026!', 'info');
+                      const targetAdmin = adminUsers.find(a => 
+                        a.email.toLowerCase() === adminIdentifier.toLowerCase() ||
+                        a.username.toLowerCase() === adminIdentifier.toLowerCase()
+                      ) || adminUsers[0];
+                      onOpenResetPassword(targetAdmin);
                     }
                   }}
-                  className="text-blue-700 font-bold hover:underline text-[11px] flex items-center gap-1 cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-black transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                 >
-                  <Key className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Reset Kata Laluan</span>
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Tukar Kata Laluan</span>
                 </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 px-4 text-white font-black rounded-2xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-75 cursor-pointer bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 border border-blue-500 shadow-blue-600/30"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Mengesahkan Akses...
-                  </span>
-                ) : (
-                  <>
-                    <span className="text-sm">LOG MASUK KE SISTEM G-TEPAT</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3]" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* TAB CONTENT 3: PENTADBIR & PENYELARAS */}
-        {activeTab === 'pentadbir' && (
-          <div className="p-5 sm:p-6">
-            <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 mb-4 text-center">
-              <span className="text-[10px] font-black text-purple-900 uppercase tracking-wide block">
-                👑 PANEL KHAS PENTADBIRAN & PENYELARAS G-TEPAT
-              </span>
-              <p className="text-[11px] text-purple-700 mt-0.5">
-                Dikhaskan untuk Guru Besar (Admin), PK Pentadbiran, dan Penyelaras G-TEPAT SK Kepawa.
-              </p>
             </div>
+          )}
 
-            {/* 3 Quick Role Buttons */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickTeacherLogin(INITIAL_USERS[0])}
-                className="p-3 rounded-2xl bg-slate-50 hover:bg-purple-700 hover:text-white border border-purple-200 transition text-left group cursor-pointer shadow-xs"
-              >
-                <span className="text-[9px] font-black text-purple-700 group-hover:text-purple-200 uppercase block">
-                  👑 GURU BESAR
-                </span>
-                <span className="text-xs font-black text-slate-900 group-hover:text-white block mt-0.5 truncate">
-                  MOHD ZAHARI
-                </span>
-                <span className="text-[9px] text-slate-500 group-hover:text-purple-200 block">
-                  Admin Utama
-                </span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickTeacherLogin(INITIAL_USERS[1])}
-                className="p-3 rounded-2xl bg-slate-50 hover:bg-amber-600 hover:text-white border border-amber-200 transition text-left group cursor-pointer shadow-xs"
-              >
-                <span className="text-[9px] font-black text-amber-700 group-hover:text-amber-200 uppercase block">
-                  🏫 PK PENTADBIRAN
-                </span>
-                <span className="text-xs font-black text-slate-900 group-hover:text-white block mt-0.5 truncate">
-                  NURTITAH
-                </span>
-                <span className="text-[9px] text-slate-500 group-hover:text-amber-200 block">
-                  Pengurusan PdP
-                </span>
-              </button>
-
-              <button
-                type="button"
-                disabled={isLoading}
-                onClick={() => handleQuickTeacherLogin(INITIAL_USERS[10])}
-                className="p-3 rounded-2xl bg-slate-50 hover:bg-teal-700 hover:text-white border border-teal-200 transition text-left group cursor-pointer shadow-xs"
-              >
-                <span className="text-[9px] font-black text-teal-700 group-hover:text-teal-200 uppercase block">
-                  ⭐ PENYELARAS
-                </span>
-                <span className="text-xs font-black text-slate-900 group-hover:text-white block mt-0.5 truncate">
-                  NORADILAH
-                </span>
-                <span className="text-[9px] text-slate-500 group-hover:text-teal-200 block">
-                  Penyelaras Sistem
-                </span>
-              </button>
-            </div>
-
-            {/* Custom Admin Passcode Field */}
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[11px]">
-                  Kod Laluan Keselamatan Pentadbir
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-purple-600">
-                    <Shield className="w-4 h-4" />
-                  </div>
-                  <input
-                    type={showPasscode ? 'text' : 'password'}
-                    placeholder="Kod Keselamatan Rasmi (Lalai: SKK2026)"
-                    value={securityPasscode}
-                    onChange={(e) => setSecurityPasscode(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-purple-300 rounded-xl text-xs font-black tracking-wider text-purple-950 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasscode(!showPasscode)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-purple-500 hover:text-purple-700 cursor-pointer"
+          {/* ============================================================== */}
+          {/* PANEL 2: LOG MASUK PENGGUNA LAIN (GURU & STAF)                  */}
+          {/* ============================================================== */}
+          {activePanel === 'guru' && (
+            <div className="space-y-4 animate-fade-in">
+              {/* Clean Standard Guru Login Form */}
+              <form onSubmit={handleGuruSubmit} className="space-y-3.5 bg-slate-50/80 p-4 rounded-2xl border border-slate-200">
+                {/* Teacher Dropdown / ID DELIMa Field */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Pilih Guru Atau Taip ID DELIMa</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-bold lowercase">
+                      @moe-dl.edu.my
+                    </span>
+                  </label>
+                  
+                  {/* Quick Select Dropdown */}
+                  <select
+                    value={guruIdentifier}
+                    onChange={(e) => setGuruIdentifier(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 transition mb-2"
                   >
-                    {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <p className="text-[10px] text-purple-700 font-medium mt-1">
-                  Kod laluan keselamatan lalai rasmi: <span className="font-mono font-bold">SKK2026</span>
-                </p>
-              </div>
+                    <option value="">-- Pilih Nama Guru Dari Senarai --</option>
+                    {otherUsers.map((teacher, idx) => (
+                      <option key={teacher.id} value={teacher.email}>
+                        {idx + 1}. {teacher.nama} ({teacher.username})
+                      </option>
+                    ))}
+                  </select>
 
+                  <input
+                    type="text"
+                    placeholder="Atau taip ID DELIMa (g-xxxxxxxx@moe-dl.edu.my)..."
+                    value={guruIdentifier}
+                    onChange={(e) => setGuruIdentifier(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                  />
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-[11px] font-black uppercase tracking-wider text-slate-700 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Kata Laluan Guru</span>
+                    </span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showGuruPassword ? 'text' : 'password'}
+                      placeholder="Masukkan kata laluan..."
+                      value={guruPassword}
+                      onChange={(e) => setGuruPassword(e.target.value)}
+                      className="w-full px-3.5 py-2.5 pr-10 bg-white border border-slate-200 rounded-xl text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600 transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGuruPassword(!showGuruPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showGuruPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Submit Action */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <span>LOG MASUK GURU (TERUS KE IMBAS QR)</span>
+                    <Camera className="w-4 h-4" />
+                  </button>
+                  <p className="text-[10px] text-center text-slate-500 mt-2 font-medium">
+                    Akses terhad: Pengguna guru hanya boleh mengakses pengimbas Kod QR PdP bilik darjah.
+                  </p>
+                </div>
+              </form>
+
+              {/* Password management ribbon */}
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5 text-slate-600">
+                  <Key className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] font-bold">Lupa atau ingin tukar kata laluan?</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onOpenResetPassword && onOpenResetPassword()}
+                  className="text-emerald-700 hover:text-emerald-900 font-black text-[11px] underline cursor-pointer"
+                >
+                  Tukar Kata Laluan Guru
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Footer Links */}
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-500 gap-2">
+            <span className="flex items-center gap-1 text-emerald-700 font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              Sistem Aktif 100% (Semua 13 Pengguna)
+            </span>
+            <div className="flex items-center gap-3">
               <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 px-4 text-white font-black rounded-2xl shadow-lg transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 border border-purple-500 shadow-purple-900/30 cursor-pointer"
+                type="button"
+                onClick={onOpenTestAccounts}
+                className="text-slate-600 hover:text-emerald-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
               >
-                <span>MASUK SEBAGAI PENTADBIR</span>
-                <ArrowRight className="w-4 h-4" />
+                <Key className="w-3 h-3 text-gold-500" />
+                <span>Senarai ID DELIMa</span>
               </button>
-            </form>
+              <button
+                type="button"
+                onClick={() => onOpenResetPassword && onOpenResetPassword()}
+                className="text-amber-700 hover:text-amber-900 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3 text-amber-600" />
+                <span>Tukar / Reset Kata Laluan</span>
+              </button>
+            </div>
           </div>
-        )}
+        </div>
 
       </div>
 
@@ -721,7 +579,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
                     if (onSetPendingScanClass) {
                       onSetPendingScanClass(cls.name);
                     }
-                    setActiveTab('pilih-guru');
                     setIsLoginScannerOpen(false);
                     onShowToast(`Kod QR Pintu Kelas ${cls.name} dikesan! Sila pilih akaun anda di bawah untuk mengesahkan kehadiran.`, 'success');
                   }}

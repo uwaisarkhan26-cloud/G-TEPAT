@@ -4,7 +4,10 @@ import {
   CalendarDays,
   Camera,
   ClipboardCheck,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Shield,
+  User as UserIcon,
+  LogOut
 } from 'lucide-react';
 import { 
   User, 
@@ -71,6 +74,8 @@ export default function App() {
     className: '',
     qrPayload: ''
   });
+
+  const isAdmin = session?.role === 'admin' || session?.role === 'pentadbir' || session?.role === 'penyelaras';
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
     const id = 'toast_' + Date.now() + '_' + Math.random().toString(36).substring(2, 5);
@@ -162,6 +167,10 @@ export default function App() {
         const parsed = JSON.parse(savedSession);
         if (parsed && parsed.email) {
           setSession(parsed);
+          const isAdm = parsed.role === 'admin' || parsed.role === 'pentadbir' || parsed.role === 'penyelaras';
+          if (!isAdm) {
+            setCurrentTab('scan-qr');
+          }
         }
       } catch (e) {
         // ignore
@@ -250,22 +259,24 @@ export default function App() {
       if (code && !StorageService.verifySecurityPasscode(code)) {
         return { 
           success: false, 
-          message: 'Kod Laluan Keselamatan Pentadbir tidak sah! Sila semak semula (Lalai: SKK2026).' 
+          message: 'Kata Laluan / Kod Keselamatan Pentadbir tidak sah! (Lalai: XBA6019).' 
         };
       }
     }
 
-    const currentPass = user.password_hash || StorageService.getUserPassword(user.id) || 'Guru#2026!';
-    // Allow official default password, saved custom password, trimmed match, or blank submit
+    const currentPass = user.password_hash || StorageService.getUserPassword(user.id) || 'XBA6019';
+    // Allow official temporary password XBA6019, saved custom password, trimmed match, or previous fallback
     const isPassValid = 
       !rawPass ||
       rawPass === currentPass || 
+      rawPass === 'XBA6019' || 
+      rawPass.toUpperCase() === 'XBA6019' ||
       rawPass === 'Guru#2026!' || 
       rawPass === currentPass.trim() ||
       rawPass === 'Elqorny@2412'; // Safety fallback for user's active password
 
     if (!isPassValid) {
-      return { success: false, message: 'Kata laluan salah. Sila semak semula atau gunakan butang Reset Kata Laluan (Lalai: Guru#2026!).' };
+      return { success: false, message: 'Kata laluan salah. Sila semak semula atau gunakan butang Tukar Kata Laluan (Lalai Sementara: XBA6019).' };
     }
 
     const newSession: SessionData = {
@@ -296,7 +307,12 @@ export default function App() {
       return { success: true, message: `Selamat datang, ${user.nama}! Kehadiran kelas ${targetClass} disahkan.` };
     }
 
-    setCurrentTab('dashboard');
+    const isUserAdmin = user.role === 'admin' || user.role === 'pentadbir' || user.role === 'penyelaras';
+    if (isUserAdmin) {
+      setCurrentTab('dashboard');
+    } else {
+      setCurrentTab('scan-qr');
+    }
     return { success: true, message: `Selamat datang, ${user.nama}!` };
   };
 
@@ -332,7 +348,13 @@ export default function App() {
     });
     refreshData();
     showToast(`Kehadiran bagi kelas ${className} (${subjekName}) berjaya direkodkan!`, 'success');
-    setCurrentTab('rekod');
+    
+    const isAdm = currentSession.role === 'admin' || currentSession.role === 'pentadbir' || currentSession.role === 'penyelaras';
+    if (isAdm) {
+      setCurrentTab('rekod');
+    } else {
+      setCurrentTab('scan-qr');
+    }
   };
 
   const handleScanSuccess = (className: string) => {
@@ -374,6 +396,7 @@ export default function App() {
           onClose={() => setIsResetPasswordModalOpen(false)}
           onConfirmReset={handleConfirmResetPassword}
           onShowToast={showToast}
+          users={users}
         />
         <LogoManagerModal
           isOpen={isLogoManagerOpen}
@@ -391,11 +414,12 @@ export default function App() {
           onLogin={handleLogin}
           onOpenTestAccounts={() => setIsTestAccountsOpen(true)}
           onOpenLogoManager={() => setIsLogoManagerOpen(true)}
-          onOpenResetPassword={() => handleOpenResetPassword()}
+          onOpenResetPassword={(u) => handleOpenResetPassword(u)}
           onOpenResetModal={() => setIsResetModalOpen(true)}
           onShowToast={showToast}
           pendingScanClass={pendingScanClass}
           onSetPendingScanClass={setPendingScanClass}
+          users={users}
         />
       </div>
     );
@@ -419,6 +443,7 @@ export default function App() {
         onClose={() => setIsResetPasswordModalOpen(false)}
         onConfirmReset={handleConfirmResetPassword}
         onShowToast={showToast}
+        users={users}
       />
 
       <LogoManagerModal
@@ -495,7 +520,32 @@ export default function App() {
         <div className="p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto animate-fade-in flex-grow">
           <PwaInstallBanner />
 
-          {currentTab === 'dashboard' && (
+          {/* Access Restriction Notice for Non-Admin trying to access restricted views */}
+          {session && !isAdmin && currentTab !== 'scan-qr' && currentTab !== 'profil' && (
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm my-4 max-w-xl mx-auto animate-fade-in">
+              <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+                <Shield className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight">
+                  AKSES TERHAD KEPADA PENTADBIR SAHAJA
+                </h3>
+                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                  Dashboard utama dan pengurusan sistem dihadkan khusus untuk Pentadbir Sekolah (Guru Besar & PK). Pengguna lain (Guru) hanya dibenarkan membuat imbasan Kod QR kehadiran PdP.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentTab('scan-qr')}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-2xl shadow-md transition flex items-center gap-2 mx-auto cursor-pointer"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Buka Pengimbas Kod QR PdP</span>
+              </button>
+            </div>
+          )}
+
+          {isAdmin && currentTab === 'dashboard' && (
             <DashboardView
               session={session}
               records={attendance}
@@ -508,7 +558,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'monitoring-live' && (
+          {isAdmin && currentTab === 'monitoring-live' && (
             <LiveMonitoringView
               session={session}
               records={attendance}
@@ -524,7 +574,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'laporan' && (
+          {isAdmin && currentTab === 'laporan' && (
             <LaporanView
               records={attendance}
               settings={settings}
@@ -534,7 +584,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'kelas' && (
+          {isAdmin && currentTab === 'kelas' && (
             <KelasView
               classes={classes}
               users={users}
@@ -545,7 +595,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'subjek' && (
+          {isAdmin && currentTab === 'subjek' && (
             <SubjekView
               subjects={subjects}
               session={session}
@@ -554,7 +604,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'jadual' && (
+          {isAdmin && currentTab === 'jadual' && (
             <JadualView
               timetable={timetable}
               classes={classes}
@@ -571,10 +621,11 @@ export default function App() {
               classes={classes}
               session={session}
               onScanSuccess={handleScanSuccess}
+              records={attendance}
             />
           )}
 
-          {currentTab === 'qr' && (
+          {isAdmin && currentTab === 'qr' && (
             <QrView
               classes={classes}
               onOpenClassQrModal={(cName, qPayload) => setClassQrModalData({ isOpen: true, className: cName, qrPayload: qPayload })}
@@ -582,7 +633,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'rekod' && (
+          {isAdmin && currentTab === 'rekod' && (
             <RekodView
               records={attendance}
               classes={classes}
@@ -596,7 +647,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'analitik' && (
+          {isAdmin && currentTab === 'analitik' && (
             <AnalitikView
               records={attendance}
               onOpenFormalPrintModal={() => setIsFormalReportOpen(true)}
@@ -605,7 +656,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'pengguna' && (
+          {isAdmin && currentTab === 'pengguna' && (
             <PenggunaView
               users={users}
               session={session}
@@ -614,7 +665,7 @@ export default function App() {
             />
           )}
 
-          {currentTab === 'tetapan' && (
+          {isAdmin && currentTab === 'tetapan' && (
             <TetapanView
               settings={settings}
               onRefresh={handleManualRefresh}
@@ -647,53 +698,88 @@ export default function App() {
 
         {/* Mobile Sticky Bottom Navigation Bar */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 py-2 px-3 flex items-center justify-around z-40 shadow-2xl">
-          <button
-            onClick={() => setCurrentTab('dashboard')}
-            className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-              currentTab === 'dashboard' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            <span>Utama</span>
-          </button>
+          {!isAdmin ? (
+            <>
+              {/* Teacher Only Bottom Nav */}
+              <button
+                onClick={() => setCurrentTab('scan-qr')}
+                className={`flex flex-col items-center justify-center gap-1 text-[11px] font-black py-1 px-4 rounded-xl transition ${
+                  currentTab === 'scan-qr' ? 'text-gold-400' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Camera className="w-5 h-5 text-gold-400" />
+                <span>Imbas QR PdP</span>
+              </button>
 
-          <button
-            onClick={() => setCurrentTab('jadual')}
-            className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-              currentTab === 'jadual' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <CalendarDays className="w-4 h-4" />
-            <span>Jadual</span>
-          </button>
+              <button
+                onClick={() => setCurrentTab('profil')}
+                className={`flex flex-col items-center justify-center gap-1 text-[11px] font-bold py-1 px-4 rounded-xl transition ${
+                  currentTab === 'profil' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <UserIcon className="w-5 h-5" />
+                <span>Profil Saya</span>
+              </button>
 
-          {/* Central Prominent Scan Button */}
-          <button
-            onClick={() => setCurrentTab('scan-qr')}
-            className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-gold-500 to-amber-400 text-slate-950 p-3 rounded-2xl shadow-xl shadow-gold-500/30 active:scale-95 transition transform border-2 border-slate-950"
-            title="Imbas QR Kelas"
-          >
-            <Camera className="w-5 h-5" />
-            <span className="text-[9px] font-black tracking-tight mt-0.5">IMBAS</span>
-          </button>
+              <button
+                onClick={() => setIsLogoutOpen(true)}
+                className="flex flex-col items-center justify-center gap-1 text-[11px] font-bold py-1 px-4 rounded-xl text-red-400 hover:text-red-300 transition"
+              >
+                <LogOut className="w-5 h-5" />
+                <span>Keluar</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setCurrentTab('dashboard')}
+                className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
+                  currentTab === 'dashboard' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                <span>Utama</span>
+              </button>
 
-          <button
-            onClick={() => setCurrentTab('rekod')}
-            className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-              currentTab === 'rekod' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ClipboardCheck className="w-4 h-4" />
-            <span>Rekod</span>
-          </button>
+              <button
+                onClick={() => setCurrentTab('jadual')}
+                className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
+                  currentTab === 'jadual' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <CalendarDays className="w-4 h-4" />
+                <span>Jadual</span>
+              </button>
 
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl text-slate-400 hover:text-slate-200 transition"
-          >
-            <MenuIcon className="w-4 h-4" />
-            <span>Menu</span>
-          </button>
+              {/* Central Prominent Scan Button */}
+              <button
+                onClick={() => setCurrentTab('scan-qr')}
+                className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-gold-500 to-amber-400 text-slate-950 p-3 rounded-2xl shadow-xl shadow-gold-500/30 active:scale-95 transition transform border-2 border-slate-950"
+                title="Imbas QR Kelas"
+              >
+                <Camera className="w-5 h-5" />
+                <span className="text-[9px] font-black tracking-tight mt-0.5">IMBAS</span>
+              </button>
+
+              <button
+                onClick={() => setCurrentTab('rekod')}
+                className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
+                  currentTab === 'rekod' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ClipboardCheck className="w-4 h-4" />
+                <span>Rekod</span>
+              </button>
+
+              <button
+                onClick={() => setIsMobileMenuOpen(true)}
+                className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl text-slate-400 hover:text-slate-200 transition"
+              >
+                <MenuIcon className="w-4 h-4" />
+                <span>Menu</span>
+              </button>
+            </>
+          )}
         </nav>
       </main>
     </div>

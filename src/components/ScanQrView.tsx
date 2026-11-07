@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { 
   Camera, 
   Zap, 
@@ -16,21 +16,26 @@ import {
   Smartphone,
   Check,
   Video,
-  VideoOff
+  VideoOff,
+  History,
+  Clock,
+  Calendar
 } from 'lucide-react';
-import { ClassItem, SessionData } from '../types';
+import { ClassItem, SessionData, AttendanceRecord } from '../types';
 import { Html5Qrcode, Html5QrcodeSupportedFormats, CameraDevice } from 'html5-qrcode';
 
 interface ScanQrViewProps {
   classes: ClassItem[];
   session: SessionData;
   onScanSuccess: (className: string) => void;
+  records?: AttendanceRecord[];
 }
 
 export const ScanQrView: React.FC<ScanQrViewProps> = ({
   classes,
   session,
-  onScanSuccess
+  onScanSuccess,
+  records = []
 }) => {
   const [scannerActive, setScannerActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -41,6 +46,17 @@ export const ScanQrView: React.FC<ScanQrViewProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [scanMethod, setScanMethod] = useState<'camera' | 'simulation' | 'manual'>('camera');
   const [simulatedClass, setSimulatedClass] = useState<string>(classes.find(c => c.darjah === 5)?.nama || classes[0]?.nama || '5 KUNING');
+
+  // User's recent attendance records (instant proof & verification that teacher's scan was saved)
+  const myRecords = useMemo(() => {
+    const teacherName = (session?.nama || '').trim().toLowerCase();
+    return (records || [])
+      .filter(r => {
+        const recordGuru = (r.guru || '').trim().toLowerCase();
+        return recordGuru.includes(teacherName) || teacherName.includes(recordGuru) || recordGuru === teacherName;
+      })
+      .slice(0, 5);
+  }, [records, session?.nama]);
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -724,6 +740,72 @@ export const ScanQrView: React.FC<ScanQrViewProps> = ({
             );
           })}
         </div>
+      </div>
+
+      {/* Teacher's Live Attendance Feed / Proof of Scan */}
+      <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+              <History className="w-5 h-5 text-emerald-700" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight">
+                Rekod Imbasan Kehadiran Anda
+              </h4>
+              <p className="text-[11px] text-slate-500">
+                Pengesahan masa nyata bagi <strong className="text-slate-800">{session.nama}</strong>:
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 uppercase tracking-wider self-start sm:self-auto flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            Tersimpan & Disahkan
+          </span>
+        </div>
+
+        {myRecords.length === 0 ? (
+          <div className="p-6 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
+            <Clock className="w-6 h-6 text-slate-400 mx-auto mb-2 opacity-60" />
+            <p className="font-bold text-slate-700">Belum ada imbasan PdP hari ini.</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Sila imbas kod QR kelas di atas untuk mula merekod kehadiran kelas anda.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {myRecords.map((rec) => (
+              <div key={rec.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs ${
+                    rec.status === 'TEPAT MASA' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    <CheckCircle2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="font-black text-slate-900 flex items-center gap-2">
+                      <span>{rec.kelas}</span>
+                      <span className="text-[11px] font-bold text-slate-500">({rec.subjek})</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {rec.tarikh}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1 font-mono font-bold text-slate-600"><Clock className="w-3 h-3" /> {rec.masa}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                    rec.status === 'TEPAT MASA'
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                  }`}>
+                    {rec.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Guide Card: How it works */}

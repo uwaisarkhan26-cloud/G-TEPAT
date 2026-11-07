@@ -43,21 +43,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const isAdminOrPk = session.role === 'admin' || session.role === 'pentadbir' || session.role === 'penyelaras';
 
-  const navItems = [
-    { id: 'dashboard', label: isAdminOrPk ? 'Dashboard Utama' : 'Dashboard Guru', icon: LayoutDashboard },
-    { id: 'monitoring-live', label: 'Panel Monitoring Live', icon: Radio, badge: 'LIVE', highlight: true },
-    { id: 'scan-qr', label: 'Imbas QR Kelas', icon: Camera, highlight: true },
-    { id: 'jadual', label: 'Jadual Waktu PdP 2026', icon: CalendarDays, badge: '7:00AM' },
-    { id: 'kelas', label: 'Pengurusan Kelas', icon: School },
-    { id: 'subjek', label: 'Pengurusan Subjek', icon: BookOpen },
-    { id: 'pengguna', label: 'Pengurusan Pengguna', icon: Users },
-    { id: 'qr', label: 'Kod QR Kelas', icon: QrCode },
-    { id: 'rekod', label: 'Rekod Kehadiran PdP', icon: ClipboardCheck },
-    { id: 'analitik', label: 'Analitik & Graf', icon: PieChart },
-    { id: 'laporan', label: 'Laporan Sistem / Cetak', icon: FileText, badge: 'FORMAL', highlight: true },
-    { id: 'tetapan', label: 'Tetapan Sistem', icon: Sliders },
-    { id: 'profil', label: 'Profil Saya', icon: User }
-  ];
+  const navItems = isAdminOrPk
+    ? [
+        { id: 'dashboard', label: 'Dashboard Utama', icon: LayoutDashboard },
+        { id: 'monitoring-live', label: 'Panel Monitoring Live', icon: Radio, badge: 'LIVE', highlight: true },
+        { id: 'scan-qr', label: 'Imbas QR Kelas', icon: Camera, highlight: true },
+        { id: 'jadual', label: 'Jadual Waktu PdP 2026', icon: CalendarDays, badge: '7:00AM' },
+        { id: 'kelas', label: 'Pengurusan Kelas', icon: School },
+        { id: 'subjek', label: 'Pengurusan Subjek', icon: BookOpen },
+        { id: 'pengguna', label: 'Pengurusan Pengguna', icon: Users },
+        { id: 'qr', label: 'Kod QR Kelas', icon: QrCode },
+        { id: 'rekod', label: 'Rekod Kehadiran PdP', icon: ClipboardCheck },
+        { id: 'analitik', label: 'Analitik & Graf', icon: PieChart },
+        { id: 'laporan', label: 'Laporan Sistem / Cetak', icon: FileText, badge: 'FORMAL', highlight: true },
+        { id: 'tetapan', label: 'Tetapan Sistem', icon: Sliders },
+        { id: 'profil', label: 'Profil Saya', icon: User }
+      ]
+    : [
+        { id: 'scan-qr', label: 'Imbas QR Kelas (PdP Sahaja)', icon: Camera, highlight: true, badge: 'AKTIF' },
+        { id: 'profil', label: 'Profil Saya', icon: User }
+      ];
 
   const handleItemClick = (tabId: string) => {
     onNavigate(tabId);
@@ -163,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Actions footer */}
       <div className="p-3 border-t border-slate-800/80 space-y-1">
-        {onOpenResetModal && (
+        {isAdminOrPk && onOpenResetModal && (
           <button
             onClick={() => {
               if (onCloseMobile) onCloseMobile();

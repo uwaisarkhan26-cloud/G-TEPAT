@@ -171,7 +171,7 @@ export const StorageService = {
           customPasswords.get(initUser.email.toLowerCase().trim()) ||
           customPasswords.get(initUser.username.toLowerCase().trim()) ||
           initUser.password_hash ||
-          'Guru#2026!';
+          'XBA6019';
 
         return {
           ...initUser,
@@ -210,7 +210,7 @@ export const StorageService = {
     return { success: true, user: list[idx] };
   },
 
-  resetUserPassword(userIdOrEmail: string, newPassword = 'Guru#2026!'): { success: boolean; user?: User; password: string } {
+  resetUserPassword(userIdOrEmail: string, newPassword = 'XBA6019'): { success: boolean; user?: User; password: string } {
     const list = this.getUsers();
     const cleanKey = userIdOrEmail.toLowerCase().trim();
     const idx = list.findIndex(u => 
@@ -236,7 +236,7 @@ export const StorageService = {
       u.email.toLowerCase().trim() === cleanKey || 
       u.username.toLowerCase().trim() === cleanKey
     );
-    return user?.password_hash || 'Guru#2026!';
+    return user?.password_hash || 'XBA6019';
   },
 
   getClasses(): ClassItem[] {

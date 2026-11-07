@@ -11,7 +11,15 @@ import {
   INITIAL_STUDENTS 
 } from './src/data/initialData';
 
-const PORT = Number(process.env.PORT) || 3000;
+const args = process.argv.slice(2);
+let cliPort: number | null = null;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--port' && args[i + 1]) {
+    cliPort = Number(args[i + 1]);
+    break;
+  }
+}
+const PORT = cliPort || Number(process.env.PORT) || 3000;
 const app = express();
 
 app.use(express.json({ limit: '10mb' }));

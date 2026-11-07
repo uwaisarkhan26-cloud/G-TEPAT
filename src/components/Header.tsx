@@ -42,6 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
     day: 'numeric'
   });
 
+  const isAdminOrPk = session.role === 'admin' || session.role === 'pentadbir' || session.role === 'penyelaras';
+
   const getRoleBadge = (role: string) => {
     switch (role) {
       case 'admin':
@@ -182,8 +184,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Live Monitoring Shortcut - Activated for all users */}
-        {onOpenLiveMonitoring && (
+        {/* Live Monitoring Shortcut - Admin Only */}
+        {isAdminOrPk && onOpenLiveMonitoring && (
           <button
             id="btn-header-live-monitoring"
             onClick={onOpenLiveMonitoring}
@@ -217,8 +219,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {/* Butang Reset Semula */}
-        {onOpenResetModal && (
+        {/* Butang Reset Semula - Admin Only */}
+        {isAdminOrPk && onOpenResetModal && (
           <button
             id="btn-header-reset-semula"
             onClick={onOpenResetModal}
@@ -231,7 +233,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {onOpenLogoManager && (
+        {/* Butang Logo Sekolah - Admin Only */}
+        {isAdminOrPk && onOpenLogoManager && (
           <button
             onClick={onOpenLogoManager}
             className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 text-xs font-bold transition flex items-center gap-1.5"
@@ -242,7 +245,8 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         )}
 
-        {onOpenPrintReport && (
+        {/* Butang Cetak Laporan - Admin Only */}
+        {isAdminOrPk && onOpenPrintReport && (
           <button
             onClick={onOpenPrintReport}
             className="px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-md shadow-slate-900/10 transition flex items-center gap-1.5"

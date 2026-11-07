@@ -1,7 +1,8 @@
 import { User, ClassItem, SubjectItem, TimeSlot, TimetableSlot, AttendanceRecord, SystemSettings, Student } from '../types';
 
-export const ADMIN_SECURITY_PASSCODE = 'SKK2026';
-export const ACCEPTED_SECURITY_PASSCODES = ['SKK2026', '2026', 'GTEPAT2026', 'ADMIN2026', 'KEPAWA2026'];
+export const ADMIN_SECURITY_PASSCODE = 'XBA6019';
+export const ACCEPTED_SECURITY_PASSCODES = ['XBA6019', 'SKK2026', '2026', 'GTEPAT2026', 'ADMIN2026', 'KEPAWA2026'];
+export const DEFAULT_TEMPORARY_PASSWORD = 'XBA6019';
 
 // SENARAI MURID SK KEPAWA SESI 2026
 export const INITIAL_STUDENTS: Student[] = [
@@ -167,19 +168,19 @@ export const INITIAL_DAYS: Array<'Isnin' | 'Selasa' | 'Rabu' | 'Khamis' | 'Jumaa
 
 // SENARAI GURU & AKP SK KEPAWA BEAUFORT SESI 2026 (BERDASARKAN DOKUMEN RASMI)
 export const INITIAL_USERS: User[] = [
-  { id: 'usr_dl_001', username: 'g-77263791', email: 'g-77263791@moe-dl.edu.my', nama: 'MOHD ZAHARI BIN TIBIN', no_staf: 'DELIMA-G77263791', role: 'admin', status: 'aktif' },
-  { id: 'usr_dl_002', username: 'g-66232911', email: 'g-66232911@moe-dl.edu.my', nama: 'NURTITAH BINTI MEMBUAI', no_staf: 'DELIMA-G66232911', role: 'pentadbir', status: 'aktif' },
-  { id: 'usr_dl_003', username: 'g-06232904', email: 'g-06232904@moe-dl.edu.my', nama: 'SITI FAIRUZ BINTI ABD RAHMAN', no_staf: 'DELIMA-G06232904', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_004', username: 'g-81232906', email: 'g-81232906@moe-dl.edu.my', nama: 'KHAYSAR BIN MOHD NOOR', no_staf: 'DELIMA-G81232906', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_006', username: 'g-78232902', email: 'g-78232902@moe-dl.edu.my', nama: 'ASNAH BINTI MD DANIL', no_staf: 'DELIMA-G78232902', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_007', username: 'g-30232903', email: 'g-30232903@moe-dl.edu.my', nama: 'DAYANG SABARIAH @ MILAH BINTI JOAS', no_staf: 'DELIMA-G30232903', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_008', username: 'g-86233208', email: 'g-86233208@moe-dl.edu.my', nama: 'SITI HABIBAH BINTI TAIP', no_staf: 'DELIMA-G86233208', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_009', username: 'g-20510582', email: 'g-20510582@moe-dl.edu.my', nama: 'MIMI NUR SHAHERA BINTI HAMINUS', no_staf: 'DELIMA-G20510582', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_010', username: 'g-40232910', email: 'g-40232910@moe-dl.edu.my', nama: 'NORMAWATI BINTI ISMAIL', no_staf: 'DELIMA-G40232910', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_011', username: 'g-94575251', email: 'g-94575251@moe-dl.edu.my', nama: 'NORLIANA E BINTI MUSNIN', no_staf: 'DELIMA-G94575251', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_012', username: 'g-38232909', email: 'g-38232909@moe-dl.edu.my', nama: 'NORADILAH BINTI RIBUT', no_staf: 'DELIMA-G38232909', role: 'penyelaras', status: 'aktif' },
-  { id: 'usr_dl_013', username: 'g-66232912', email: 'g-66232912@moe-dl.edu.my', nama: 'ROHIDAH @ NORIDAH BINTI MASLIN', no_staf: 'DELIMA-G66232912', role: 'guru', status: 'aktif' },
-  { id: 'usr_dl_014', username: 'g-46233078', email: 'g-46233078@moe-dl.edu.my', nama: 'SARIPAH BINTI OMAR', no_staf: 'DELIMA-G46233078', role: 'guru', status: 'aktif' }
+  { id: 'usr_dl_001', username: 'g-77263791', email: 'g-77263791@moe-dl.edu.my', nama: 'MOHD ZAHARI BIN TIBIN', no_staf: 'DELIMA-G77263791', role: 'admin', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_002', username: 'g-66232911', email: 'g-66232911@moe-dl.edu.my', nama: 'NURTITAH BINTI MEMBUAI', no_staf: 'DELIMA-G66232911', role: 'pentadbir', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_003', username: 'g-06232904', email: 'g-06232904@moe-dl.edu.my', nama: 'SITI FAIRUZ BINTI ABD RAHMAN', no_staf: 'DELIMA-G06232904', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_004', username: 'g-81232906', email: 'g-81232906@moe-dl.edu.my', nama: 'KHAYSAR BIN MOHD NOOR', no_staf: 'DELIMA-G81232906', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_006', username: 'g-78232902', email: 'g-78232902@moe-dl.edu.my', nama: 'ASNAH BINTI MD DANIL', no_staf: 'DELIMA-G78232902', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_007', username: 'g-30232903', email: 'g-30232903@moe-dl.edu.my', nama: 'DAYANG SABARIAH @ MILAH BINTI JOAS', no_staf: 'DELIMA-G30232903', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_008', username: 'g-86233208', email: 'g-86233208@moe-dl.edu.my', nama: 'SITI HABIBAH BINTI TAIP', no_staf: 'DELIMA-G86233208', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_009', username: 'g-20510582', email: 'g-20510582@moe-dl.edu.my', nama: 'MIMI NUR SHAHERA BINTI HAMINUS', no_staf: 'DELIMA-G20510582', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_010', username: 'g-40232910', email: 'g-40232910@moe-dl.edu.my', nama: 'NORMAWATI BINTI ISMAIL', no_staf: 'DELIMA-G40232910', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_011', username: 'g-94575251', email: 'g-94575251@moe-dl.edu.my', nama: 'NORLIANA E BINTI MUSNIN', no_staf: 'DELIMA-G94575251', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_012', username: 'g-38232909', email: 'g-38232909@moe-dl.edu.my', nama: 'NORADILAH BINTI RIBUT', no_staf: 'DELIMA-G38232909', role: 'penyelaras', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_013', username: 'g-66232912', email: 'g-66232912@moe-dl.edu.my', nama: 'ROHIDAH @ NORIDAH BINTI MASLIN', no_staf: 'DELIMA-G66232912', role: 'guru', status: 'aktif', password_hash: 'XBA6019' },
+  { id: 'usr_dl_014', username: 'g-46233078', email: 'g-46233078@moe-dl.edu.my', nama: 'SARIPAH BINTI OMAR', no_staf: 'DELIMA-G46233078', role: 'guru', status: 'aktif', password_hash: 'XBA6019' }
 ];
 
 // SENARAI KELAS SK KEPAWA SESI 2026 (BERDASARKAN DOKUMEN JADUAL KELAS)

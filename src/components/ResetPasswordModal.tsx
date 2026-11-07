@@ -22,6 +22,7 @@ interface ResetPasswordModalProps {
   onClose: () => void;
   onConfirmReset: (userId: string, newPassword: string) => void;
   onShowToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
+  users?: User[];
 }
 
 export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
@@ -29,16 +30,18 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   user,
   onClose,
   onConfirmReset,
-  onShowToast
+  onShowToast,
+  users = []
 }) => {
-  const [resetType, setResetType] = useState<'default' | 'custom' | 'generate'>('default');
+  const [selectedUserId, setSelectedUserId] = useState<string>(user?.id || '');
+  const [resetType, setResetType] = useState<'default' | 'custom' | 'generate'>('custom');
   const [customPassword, setCustomPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
-  const DEFAULT_PASSWORD = 'Guru#2026!';
+  const DEFAULT_PASSWORD = 'XBA6019';
 
   const generateRandomPassword = () => {
     const prefixes = ['Kepawa', 'Guru', 'Tepat', 'Hebat', 'PdP'];
@@ -51,16 +54,19 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      setResetType('default');
+      setSelectedUserId(user?.id || (users[0]?.id || ''));
+      setResetType('custom');
       setCustomPassword('');
       setConfirmPassword('');
       setShowPassword(false);
       setIsCopied(false);
       setGeneratedPassword(generateRandomPassword());
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, users]);
 
-  if (!isOpen || !user) return null;
+  const activeUser = (users.length > 0 ? users.find(u => u.id === selectedUserId) : null) || user;
+
+  if (!isOpen || !activeUser) return null;
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -94,7 +100,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
       }
     }
 
-    onConfirmReset(user.id, finalPassword);
+    onConfirmReset(activeUser.id, finalPassword);
     onClose();
   };
 
@@ -111,7 +117,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
               <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-gold-300 text-[10px] font-black uppercase tracking-wider">
                 KESELAMATAN AKAUN DELIMA
               </span>
-              <h2 className="text-lg font-black text-white mt-0.5">Reset Kata Laluan</h2>
+              <h2 className="text-lg font-black text-white mt-0.5">Tukar / Reset Kata Laluan</h2>
             </div>
           </div>
           <button
@@ -122,29 +128,49 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
           </button>
         </div>
 
+        {/* User Selector Dropdown */}
+        {users.length > 0 && (
+          <div className="px-5 pt-4 pb-2 bg-slate-100/80 border-b border-slate-200">
+            <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Pilih Akaun Guru / Pentadbir:
+            </label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-500"
+            >
+              {users.map(u => (
+                <option key={u.id} value={u.id}>
+                  {u.nama} ({u.email}) - {u.role.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* User Info Card */}
         <div className="p-5 bg-slate-50 border-b border-slate-200">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-kepawa-700 text-white flex items-center justify-center font-black text-sm shadow-sm">
-                {user.nama.charAt(0)}
+                {activeUser.nama.charAt(0)}
               </div>
               <div>
-                <h4 className="font-extrabold text-slate-900 text-sm">{user.nama}</h4>
+                <h4 className="font-extrabold text-slate-900 text-sm">{activeUser.nama}</h4>
                 <div className="text-xs text-slate-500 font-mono flex items-center gap-1.5 mt-0.5">
-                  <span>{user.email}</span>
+                  <span>{activeUser.email}</span>
                   <span className="text-slate-300">•</span>
-                  <span className="text-slate-400">{user.no_staf}</span>
+                  <span className="text-slate-400">{activeUser.no_staf}</span>
                 </div>
               </div>
             </div>
             <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase shrink-0 ${
-              user.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
-              user.role === 'pentadbir' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
-              user.role === 'penyelaras' ? 'bg-teal-100 text-teal-900 border border-teal-200' :
+              activeUser.role === 'admin' ? 'bg-purple-100 text-purple-900 border border-purple-200' :
+              activeUser.role === 'pentadbir' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+              activeUser.role === 'penyelaras' ? 'bg-teal-100 text-teal-900 border border-teal-200' :
               'bg-emerald-100 text-emerald-900 border border-emerald-200'
             }`}>
-              {user.role === 'admin' ? 'ADMIN' : user.role === 'pentadbir' ? 'PK / PENTADBIR' : user.role === 'penyelaras' ? 'PENYELARAS' : 'GURU'}
+              {activeUser.role === 'admin' ? 'ADMIN' : activeUser.role === 'pentadbir' ? 'PK / PENTADBIR' : activeUser.role === 'penyelaras' ? 'PENYELARAS' : 'GURU'}
             </span>
           </div>
         </div>
