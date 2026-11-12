@@ -549,6 +549,20 @@ export const StorageService = {
     }
   },
 
+  cleanTodayAttendance(dateStr?: string) {
+    const today = dateStr || new Date().toISOString().split('T')[0];
+    const list = this.getAttendance().filter(r => r.tarikh !== today);
+    localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(list));
+
+    if (typeof window !== 'undefined') {
+      fetch('/api/attendance/clean-today', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: today })
+      }).catch(() => {});
+    }
+  },
+
   async syncWithCloud(): Promise<{ success: boolean; cloudSyncedCount: number }> {
     if (typeof window === 'undefined') return { success: false, cloudSyncedCount: 0 };
     try {

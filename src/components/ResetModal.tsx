@@ -27,7 +27,7 @@ export const ResetModal: React.FC<ResetModalProps> = ({
   onRefresh,
   onShowToast
 }) => {
-  const [selectedOption, setSelectedOption] = useState<'attendance' | 'timetable' | 'passwords' | 'full' | null>(null);
+  const [selectedOption, setSelectedOption] = useState<'today-attendance' | 'attendance' | 'timetable' | 'passwords' | 'full' | null>(null);
   const [confirmText, setConfirmText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -42,6 +42,20 @@ export const ResetModal: React.FC<ResetModalProps> = ({
       handleClose();
     } catch {
       onShowToast('Ralat semasa membersihkan rekod kehadiran.', 'error');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleResetTodayAttendance = async () => {
+    setIsProcessing(true);
+    try {
+      StorageService.cleanTodayAttendance();
+      onShowToast('Rekod kehadiran PdP tarikh semasa (hari ini) berjaya dikosongkan!', 'success');
+      onRefresh();
+      handleClose();
+    } catch {
+      onShowToast('Ralat semasa mengosongkan kehadiran hari ini.', 'error');
     } finally {
       setIsProcessing(false);
     }
@@ -134,7 +148,53 @@ export const ResetModal: React.FC<ResetModalProps> = ({
 
         {/* Content */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-3.5 flex-grow text-xs">
-          {/* Option 1: Reset Attendance */}
+          {/* Option 0: Reset Today's Attendance Only */}
+          <div 
+            onClick={() => setSelectedOption('today-attendance')}
+            className={`p-4 rounded-2xl border transition cursor-pointer flex items-start gap-3.5 ${
+              selectedOption === 'today-attendance'
+                ? 'bg-orange-50/80 border-orange-400 ring-2 ring-orange-400/20 shadow-sm'
+                : 'bg-white border-slate-200 hover:border-orange-300 hover:bg-slate-50'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-700 flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div className="flex-grow">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-slate-900 text-xs sm:text-sm">
+                  1. Kosongkan Kehadiran Tarikh Semasa (Hari Ini Sahaja)
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-orange-100 text-orange-800 uppercase">
+                  Tarikh Semasa
+                </span>
+              </div>
+              <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
+                Padam rekod kehadiran PdP untuk hari ini sahaja tanpa menjejaskan rekod hari-hari lain.
+              </p>
+              {selectedOption === 'today-attendance' && (
+                <div className="mt-3 pt-3 border-t border-orange-200/60 flex items-center justify-between">
+                  <span className="text-[11px] text-orange-900 font-bold">
+                    Kosongkan kehadiran hari ini sahaja?
+                  </span>
+                  <button
+                    type="button"
+                    disabled={isProcessing}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleResetTodayAttendance();
+                    }}
+                    className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-black rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Sahkan Kosongkan Hari Ini</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Option 1: Reset All Attendance */}
           <div 
             onClick={() => setSelectedOption('attendance')}
             className={`p-4 rounded-2xl border transition cursor-pointer flex items-start gap-3.5 ${
@@ -149,14 +209,14 @@ export const ResetModal: React.FC<ResetModalProps> = ({
             <div className="flex-grow">
               <div className="flex items-center justify-between">
                 <span className="font-black text-slate-900 text-xs sm:text-sm">
-                  1. Reset Semula Rekod Kehadiran PdP
+                  2. Kosongkan SEMUA Rekod Kehadiran PdP
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 uppercase">
-                  Pembersihan Data
+                  Semua Tarikh
                 </span>
               </div>
               <p className="text-slate-500 text-[11px] mt-1 leading-relaxed">
-                Padam semua log imbasan kehadiran (data percubaan/simulasi) untuk memulakan rekod kehadiran sebenar guru di SK Kepawa.
+                Padam seluruh log imbasan kehadiran bagi semua tarikh untuk permulaan operasi rasmi.
               </p>
               {selectedOption === 'attendance' && (
                 <div className="mt-3 pt-3 border-t border-rose-200/60 flex items-center justify-between">
@@ -173,7 +233,7 @@ export const ResetModal: React.FC<ResetModalProps> = ({
                     className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black rounded-xl text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Sahkan Reset Kehadiran</span>
+                    <span>Sahkan Kosongkan Semua</span>
                   </button>
                 </div>
               )}
