@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Users, Printer, Shield, UserCheck, GraduationCap, ChevronDown, Check, Menu, Image as ImageIcon, RefreshCw, RotateCcw, Camera } from 'lucide-react';
+import { Calendar, Users, Printer, Shield, UserCheck, GraduationCap, ChevronDown, Check, Menu, Image as ImageIcon, RefreshCw, RotateCcw, Camera, Share2 } from 'lucide-react';
 import { SessionData, User } from '../types';
 import { INITIAL_USERS } from '../data/initialData';
 import { SchoolLogo } from './SchoolLogo';
@@ -13,6 +13,7 @@ interface HeaderProps {
   onOpenLiveMonitoring?: () => void;
   onOpenScanner?: () => void;
   onOpenResetModal?: () => void;
+  onOpenShareApp?: () => void;
   onSwitchUser?: (email: string) => void;
   onToggleMobileMenu?: () => void;
   onRefresh?: () => void;
@@ -28,6 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenLiveMonitoring,
   onOpenScanner,
   onOpenResetModal,
+  onOpenShareApp,
   onSwitchUser,
   onToggleMobileMenu,
   onRefresh,
@@ -198,6 +200,20 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
             <span className="hidden sm:inline">Monitoring Live</span>
             <span className="sm:hidden text-[11px]">Live</span>
+          </button>
+        )}
+
+        {/* Pautan Awam Telefon Guru */}
+        {onOpenShareApp && (
+          <button
+            id="btn-header-share-app"
+            onClick={onOpenShareApp}
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-black transition flex items-center gap-1.5 active:scale-95 shadow-xs cursor-pointer"
+            title="Dapatkan Pautan Awam untuk Telefon Guru (Elak Ralat 403 AI Studio)"
+          >
+            <Share2 className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="hidden sm:inline">Pautan Guru</span>
+            <span className="sm:hidden text-[11px]">Pautan</span>
           </button>
         )}
 

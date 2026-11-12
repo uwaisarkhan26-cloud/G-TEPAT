@@ -44,6 +44,7 @@ import { TetapanView } from './components/TetapanView';
 import { ProfilView } from './components/ProfilView';
 import { LoginView } from './components/LoginView';
 import { ResetModal } from './components/ResetModal';
+import { ShareAppModal } from './components/ShareAppModal';
 
 export default function App() {
   const [session, setSession] = useState<SessionData | null>(null);
@@ -66,6 +67,7 @@ export default function App() {
   const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] = useState<boolean>(false);
   const [isLogoManagerOpen, setIsLogoManagerOpen] = useState<boolean>(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [isShareAppOpen, setIsShareAppOpen] = useState<boolean>(false);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [pendingScanClass, setPendingScanClass] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
@@ -410,12 +412,18 @@ export default function App() {
           onRefresh={refreshData}
           onShowToast={showToast}
         />
+        <ShareAppModal
+          isOpen={isShareAppOpen}
+          onClose={() => setIsShareAppOpen(false)}
+          onShowToast={showToast}
+        />
         <LoginView
           onLogin={handleLogin}
           onOpenTestAccounts={() => setIsTestAccountsOpen(true)}
           onOpenLogoManager={() => setIsLogoManagerOpen(true)}
           onOpenResetPassword={(u) => handleOpenResetPassword(u)}
           onOpenResetModal={() => setIsResetModalOpen(true)}
+          onOpenShareApp={() => setIsShareAppOpen(true)}
           onShowToast={showToast}
           pendingScanClass={pendingScanClass}
           onSetPendingScanClass={setPendingScanClass}
@@ -482,6 +490,13 @@ export default function App() {
         onClose={() => setClassQrModalData({ isOpen: false, className: '', qrPayload: '' })}
       />
 
+      {/* Share App Modal for Phone / Teachers */}
+      <ShareAppModal
+        isOpen={isShareAppOpen}
+        onClose={() => setIsShareAppOpen(false)}
+        onShowToast={showToast}
+      />
+
       {/* Sidebar Navigation */}
       <Sidebar
         currentTab={currentTab}
@@ -505,6 +520,7 @@ export default function App() {
           onOpenPrintReport={() => setIsFormalReportOpen(true)}
           onOpenLiveMonitoring={() => setCurrentTab('monitoring-live')}
           onOpenScanner={() => setCurrentTab('scan-qr')}
+          onOpenShareApp={() => setIsShareAppOpen(true)}
           onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           onRefresh={handleManualRefresh}
           isRefreshing={isSyncing}

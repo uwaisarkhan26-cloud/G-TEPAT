@@ -44,7 +44,11 @@ export const QrView: React.FC<QrViewProps> = ({
   // Generate payload based on format
   const getClassPayload = (cls: ClassItem) => {
     if (qrFormat === 'url') {
-      const origin = window.location.origin;
+      let origin = window.location.origin;
+      // Never encode internal aistudio.google.com URL which triggers Google 403 error on phones
+      if (origin.includes('aistudio.google.com') || origin.includes('localhost')) {
+        origin = 'https://g-tepat.netlify.app';
+      }
       return `${origin}/?scan=${encodeURIComponent(cls.nama)}`;
     }
     return cls.qr_code || ('SKK-2026-' + cls.nama.replace(/\s+/g, ''));

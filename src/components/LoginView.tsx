@@ -19,7 +19,8 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  Shield
+  Shield,
+  Share2
 } from 'lucide-react';
 import { SchoolLogo } from './SchoolLogo';
 import { INITIAL_USERS } from '../data/initialData';
@@ -37,6 +38,7 @@ interface LoginViewProps {
   onOpenLogoManager?: () => void;
   onOpenResetPassword?: (user?: User) => void;
   onOpenResetModal?: () => void;
+  onOpenShareApp?: () => void;
   onShowToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
   pendingScanClass?: string | null;
   onSetPendingScanClass?: (className: string) => void;
@@ -49,6 +51,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onOpenLogoManager,
   onOpenResetPassword,
   onOpenResetModal,
+  onOpenShareApp,
   onShowToast,
   pendingScanClass,
   onSetPendingScanClass,
@@ -179,6 +182,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
           >
             <Camera className="w-3.5 h-3.5 text-slate-950" />
             <span>Imbas Pintu</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenShareApp}
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 hover:text-white backdrop-blur-md text-[11px] font-bold border border-emerald-400/40 transition flex items-center gap-1.5 shadow-md cursor-pointer"
+            title="Dapatkan Pautan Awam untuk WhatsApp Guru (Elak Ralat 403)"
+          >
+            <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Pautan Guru</span>
           </button>
 
           <button
