@@ -316,6 +316,25 @@ app.post('/api/attendance/clean-test-data', (req, res) => {
   }
 });
 
+// Clean Attendance for TODAY only (tarikh semasa sahaja)
+app.post('/api/attendance/clean-today', (req, res) => {
+  try {
+    const targetDate = req.body.date || new Date().toISOString().split('T')[0];
+    const beforeCount = (cloudCache.attendance || []).length;
+    cloudCache.attendance = (cloudCache.attendance || []).filter(r => r.tarikh !== targetDate);
+    const deletedCount = beforeCount - cloudCache.attendance.length;
+    saveCloudData(cloudCache);
+    res.json({ 
+      success: true, 
+      message: `Semua rekod kehadiran bagi tarikh ${targetDate} (${deletedCount} rekod) telah dibersihkan.`,
+      deletedCount,
+      targetDate
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // Settings Endpoints
 app.get('/api/settings', (req, res) => {
   res.json(cloudCache.settings || null);
