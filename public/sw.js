@@ -1,10 +1,13 @@
-const CACHE_NAME = 'gtepat-cache-v1';
+const CACHE_NAME = 'gtepat-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/icons/icon.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -32,7 +35,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass API requests to network directly
   if (event.request.url.includes('/api/')) {
     return;
   }

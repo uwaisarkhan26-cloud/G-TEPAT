@@ -1,24 +1,47 @@
 {
+  "id": "/",
   "name": "G-TEPAT SK KEPAWA 2026",
   "short_name": "G-TEPAT",
   "description": "Sistem Pengurusan & Pemantauan Kehadiran Guru SK Kepawa Beaufort 2026",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#022c22",
-  "theme_color": "#064e3b",
+  "background_color": "#180306",
+  "theme_color": "#2b060c",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Imbas QR Kelas",
+      "short_name": "Imbas QR",
+      "description": "Terus buka pengimbas Kod QR bilik darjah",
+      "url": "/?tab=scan-qr",
+      "icons": [
+        {
+          "src": "/pwa-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

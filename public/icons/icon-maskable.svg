@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f0917"/>
+      <stop offset="50%" stop-color="#2b060c"/>
+      <stop offset="100%" stop-color="#180306"/>
+    </linearGradient>
+    <linearGradient id="goldMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+  <!-- Full-bleed background for Android maskable safe zone -->
+  <rect width="512" height="512" fill="url(#bgMask)"/>
+  <!-- All iconography centered within 76% safe zone -->
+  <circle cx="256" cy="232" r="110" fill="#180306" stroke="url(#goldMask)" stroke-width="9"/>
+  <circle cx="256" cy="232" r="90" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="8 6" opacity="0.65"/>
+  <line x1="256" y1="232" x2="256" y2="164" stroke="url(#goldMask)" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="232" x2="306" y2="232" stroke="url(#goldMask)" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="256" cy="232" r="13" fill="#fde047"/>
+  <path d="M214 282 L244 312 L304 250" fill="none" stroke="#34d399" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="256" y="388" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="34" fill="#fbbf24" text-anchor="middle" letter-spacing="2">G-TEPAT</text>
+</svg>

@@ -1,24 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#022c22"/>
-      <stop offset="50%" stop-color="#064e3b"/>
-      <stop offset="100%" stop-color="#047857"/>
+    <linearGradient id="bgMaroon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f0917"/>
+      <stop offset="50%" stop-color="#2b060c"/>
+      <stop offset="100%" stop-color="#180306"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24"/>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="50%" stop-color="#fbbf24"/>
       <stop offset="100%" stop-color="#d97706"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="180" fill="none" stroke="url(#gold)" stroke-width="12" stroke-dasharray="16 8"/>
-  <circle cx="256" cy="256" r="140" fill="#022c22" stroke="#10b981" stroke-width="6"/>
+  <rect width="512" height="512" rx="112" fill="url(#bgMaroon)"/>
+  <rect x="18" y="18" width="476" height="476" rx="98" fill="none" stroke="url(#goldGrad)" stroke-width="8" opacity="0.85"/>
+  <circle cx="256" cy="228" r="142" fill="#180306" stroke="url(#goldGrad)" stroke-width="10"/>
+  <circle cx="256" cy="228" r="118" fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="10 8" opacity="0.65"/>
   <!-- Clock Hands -->
-  <line x1="256" y1="256" x2="256" y2="160" stroke="url(#gold)" stroke-width="14" stroke-linecap="round"/>
-  <line x1="256" y1="256" x2="330" y2="256" stroke="url(#gold)" stroke-width="14" stroke-linecap="round"/>
-  <circle cx="256" cy="256" r="18" fill="#fbbf24"/>
+  <line x1="256" y1="228" x2="256" y2="142" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round"/>
+  <line x1="256" y1="228" x2="320" y2="228" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="256" cy="228" r="16" fill="#fde047"/>
   <!-- Checkmark -->
-  <path d="M190 350 L240 400 L340 290" fill="none" stroke="#34d399" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
-  <!-- Text -->
-  <text x="256" y="470" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="#ffffff" text-anchor="middle" letter-spacing="4">G-TEPAT</text>
+  <path d="M204 294 L242 332 L318 252" fill="none" stroke="#34d399" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- School Label -->
+  <text x="256" y="422" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="44" fill="#fbbf24" text-anchor="middle" letter-spacing="3">G-TEPAT</text>
+  <text x="256" y="460" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="22" fill="#fef3c7" text-anchor="middle" letter-spacing="2">SK KEPAWA 2026</text>
 </svg>

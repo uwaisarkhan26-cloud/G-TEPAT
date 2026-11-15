@@ -20,7 +20,8 @@ const KEYS = {
   SESSION: 'gtepat_authenticated_session_v10',
   CUSTOM_LOGO: 'gtepat_custom_school_logo_v10',
   STUDENTS: 'gtepat_students_v10',
-  PASSCODE: 'gtepat_admin_passcode_v10'
+  PASSCODE: 'gtepat_admin_passcode_v10',
+  OFFLINE_QUEUE: 'gtepat_offline_sync_queue_v10'
 };
 
 export const StorageService = {
@@ -482,6 +483,51 @@ export const StorageService = {
     }
   },
 
+  getPendingSyncIds(): string[] {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEYS.OFFLINE_QUEUE) || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  },
+
+  getPendingSyncCount(): number {
+    return this.getPendingSyncIds().length;
+  },
+
+  addToOfflineQueue(recordId: string) {
+    try {
+      const current = this.getPendingSyncIds();
+      if (!current.includes(recordId)) {
+        current.push(recordId);
+        localStorage.setItem(KEYS.OFFLINE_QUEUE, JSON.stringify(current));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('gtepat-offline-queue-updated'));
+        }
+      }
+    } catch {}
+  },
+
+  removeFromOfflineQueue(recordId: string) {
+    try {
+      const updated = this.getPendingSyncIds().filter(id => id !== recordId);
+      localStorage.setItem(KEYS.OFFLINE_QUEUE, JSON.stringify(updated));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('gtepat-offline-queue-updated'));
+      }
+    } catch {}
+  },
+
+  clearOfflineQueue() {
+    try {
+      localStorage.setItem(KEYS.OFFLINE_QUEUE, JSON.stringify([]));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('gtepat-offline-queue-updated'));
+      }
+    } catch {}
+  },
+
   saveAttendanceRecord(rec: Omit<AttendanceRecord, 'id' | 'tarikh' | 'masa'> & { tarikh?: string; masa?: string }): AttendanceRecord {
     const list = this.getAttendance();
     const now = new Date();
@@ -499,13 +545,23 @@ export const StorageService = {
     list.unshift(newRec);
     localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(list));
 
-    // Asynchronously sync to Cloud Server
-    if (typeof window !== 'undefined') {
+    // Queue immediately and attempt async cloud sync if online
+    this.addToOfflineQueue(newRec.id);
+    if (typeof window !== 'undefined' && navigator.onLine) {
       fetch('/api/attendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRec)
-      }).catch(() => {});
+      })
+        .then(res => {
+          const ct = res.headers.get('content-type') || '';
+          if (res.ok && ct.includes('application/json')) {
+            this.removeFromOfflineQueue(newRec.id);
+          }
+        })
+        .catch(() => {
+          // Remains safely queued in localStorage for auto-sync when online
+        });
     }
 
     return newRec;
@@ -564,7 +620,9 @@ export const StorageService = {
   },
 
   async syncWithCloud(): Promise<{ success: boolean; cloudSyncedCount: number }> {
-    if (typeof window === 'undefined') return { success: false, cloudSyncedCount: 0 };
+    if (typeof window === 'undefined' || !navigator.onLine) {
+      return { success: false, cloudSyncedCount: 0 };
+    }
     try {
       // 1. Send current local state to cloud server
       const localAttendance = this.getAttendance();
@@ -591,19 +649,31 @@ export const StorageService = {
         })
       });
 
-      if (response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      if (response.ok && contentType.includes('application/json')) {
         const json = await response.json();
         if (json.success && json.data) {
-          // Attendance
+          // Attendance (merge cloud + any pending local records safely)
           if (Array.isArray(json.data.attendance)) {
             const isSim = (r: any) => {
               if (!r || !r.id) return true;
               const id = String(r.id);
               return /^rec_0[1-9]$/.test(id) || id === 'rec_10' || id === 'rec_1787717291228_916';
             };
-            const valid = json.data.attendance.filter((r: any) => !isSim(r));
-            localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(valid));
+            const validCloud = json.data.attendance.filter((r: any) => !isSim(r));
+            const mergedMap = new Map<string, AttendanceRecord>();
+            validCloud.forEach((r: AttendanceRecord) => mergedMap.set(r.id, r));
+            localAttendance.filter(r => !isSim(r)).forEach(r => {
+              if (!mergedMap.has(r.id)) mergedMap.set(r.id, r);
+            });
+            const merged = Array.from(mergedMap.values()).sort((a, b) =>
+              `${b.tarikh} ${b.masa}`.localeCompare(`${a.tarikh} ${a.masa}`)
+            );
+            localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(merged));
           }
+
+          // Clear pending offline queue after confirmed JSON sync
+          this.clearOfflineQueue();
 
           // Users & Passwords (sync cloud user records)
           if (Array.isArray(json.data.users) && json.data.users.length > 0) {

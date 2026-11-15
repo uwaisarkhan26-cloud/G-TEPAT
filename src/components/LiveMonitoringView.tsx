@@ -195,24 +195,24 @@ export const LiveMonitoringView: React.FC<LiveMonitoringViewProps> = ({
     return OFFICIAL_MASTER_SCHEDULE.filter(s => s.hari === validScheduleDay);
   }, [validScheduleDay]);
 
-  // Current slot estimate based on current time (SK KEPAWA sessions: 07:00 - 12:50)
+  // Current slot estimate based on current time (with 5-min pre-start window: 06:55 - 12:50)
   const currentSlotEstimate = useMemo(() => {
     const [h, m] = timeString.split(':').map(Number);
     const minutes = h * 60 + m;
 
-    if (minutes < 7 * 60) return { name: 'Pra-PdP (Sebelum 7:00 AM)', isRecess: false, slot: null };
-    if (minutes >= 7 * 60 && minutes < 7 * 60 + 30) return { name: 'Slot 1 (07:00 - 07:30 AM)', isRecess: false, slot: 'S1' };
-    if (minutes >= 7 * 60 + 30 && minutes < 8 * 60) return { name: 'Slot 2 (07:30 - 08:00 AM)', isRecess: false, slot: 'S2' };
-    if (minutes >= 8 * 60 && minutes < 8 * 60 + 30) return { name: 'Slot 3 (08:00 - 08:30 AM)', isRecess: false, slot: 'S3' };
-    if (minutes >= 8 * 60 + 30 && minutes < 9 * 60) return { name: 'Slot 4 (08:30 - 09:00 AM)', isRecess: false, slot: 'S4' };
-    if (minutes >= 9 * 60 && minutes < 9 * 60 + 30) return { name: 'Slot 5 (09:00 - 09:30 AM)', isRecess: false, slot: 'S5' };
-    if (minutes >= 9 * 60 + 30 && minutes < 9 * 60 + 50) return { name: 'WAKTU REHAT (09:30 - 09:50 AM)', isRecess: true, slot: 'RECESS' };
-    if (minutes >= 9 * 60 + 50 && minutes < 10 * 60 + 20) return { name: 'Slot 6 (09:50 - 10:20 AM)', isRecess: false, slot: 'S6' };
-    if (minutes >= 10 * 60 + 20 && minutes < 10 * 60 + 50) return { name: 'Slot 7 (10:20 - 10:50 AM)', isRecess: false, slot: 'S7' };
-    if (minutes >= 10 * 60 + 50 && minutes < 11 * 60 + 20) return { name: 'Slot 8 (10:50 - 11:20 AM)', isRecess: false, slot: 'S8' };
-    if (minutes >= 11 * 60 + 20 && minutes < 11 * 60 + 50) return { name: 'Slot 9 (11:20 - 11:50 AM)', isRecess: false, slot: 'S9' };
-    if (minutes >= 11 * 60 + 50 && minutes < 12 * 60 + 20) return { name: 'Slot 10 (11:50 - 12:20 PM)', isRecess: false, slot: 'S10' };
-    if (minutes >= 12 * 60 + 20 && minutes < 12 * 60 + 50) return { name: 'Slot 11 (12:20 - 12:50 PM)', isRecess: false, slot: 'S11' };
+    if (minutes < 6 * 60 + 55) return { name: 'Pra-PdP (Sebelum 06:55 AM)', isRecess: false, slot: null };
+    if (minutes >= 6 * 60 + 55 && minutes < 7 * 60 + 25) return { name: 'Slot 1 (07:00 - 07:30 AM • Zon Tepat 06:55–07:05)', isRecess: false, slot: 'S1' };
+    if (minutes >= 7 * 60 + 25 && minutes < 7 * 60 + 55) return { name: 'Slot 2 (07:30 - 08:00 AM)', isRecess: false, slot: 'S2' };
+    if (minutes >= 7 * 60 + 55 && minutes < 8 * 60 + 25) return { name: 'Slot 3 (08:00 - 08:30 AM)', isRecess: false, slot: 'S3' };
+    if (minutes >= 8 * 60 + 25 && minutes < 8 * 60 + 55) return { name: 'Slot 4 (08:30 - 09:00 AM)', isRecess: false, slot: 'S4' };
+    if (minutes >= 8 * 60 + 55 && minutes < 9 * 60 + 30) return { name: 'Slot 5 (09:00 - 09:30 AM)', isRecess: false, slot: 'S5' };
+    if (minutes >= 9 * 60 + 30 && minutes < 9 * 60 + 45) return { name: 'WAKTU REHAT (09:30 - 09:50 AM)', isRecess: true, slot: 'RECESS' };
+    if (minutes >= 9 * 60 + 45 && minutes < 10 * 60 + 15) return { name: 'Slot 6 (09:50 - 10:20 AM)', isRecess: false, slot: 'S6' };
+    if (minutes >= 10 * 60 + 15 && minutes < 10 * 60 + 45) return { name: 'Slot 7 (10:20 - 10:50 AM)', isRecess: false, slot: 'S7' };
+    if (minutes >= 10 * 60 + 45 && minutes < 11 * 60 + 15) return { name: 'Slot 8 (10:50 - 11:20 AM)', isRecess: false, slot: 'S8' };
+    if (minutes >= 11 * 60 + 15 && minutes < 11 * 60 + 45) return { name: 'Slot 9 (11:20 - 11:50 AM)', isRecess: false, slot: 'S9' };
+    if (minutes >= 11 * 60 + 45 && minutes < 12 * 60 + 15) return { name: 'Slot 10 (11:50 - 12:20 PM)', isRecess: false, slot: 'S10' };
+    if (minutes >= 12 * 60 + 15 && minutes <= 12 * 60 + 50) return { name: 'Slot 11 (12:20 - 12:50 PM)', isRecess: false, slot: 'S11' };
     return { name: 'Tamat Sesi Persekolahan (Selepas 12:50 PM)', isRecess: false, slot: null };
   }, [timeString]);
 

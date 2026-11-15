@@ -20,6 +20,7 @@ import {
 } from './types';
 import { StorageService } from './services/storageService';
 import { INITIAL_USERS } from './data/initialData';
+import { evaluateScanTiming } from './utils/attendanceTiming';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ToastContainer, ToastMessage } from './components/Toast';
@@ -30,6 +31,7 @@ import { LogoManagerModal } from './components/LogoManagerModal';
 import { FormalReportPrintModal } from './components/FormalReportPrintModal';
 import { QrView, ClassQrModal } from './components/QrPanelModal';
 import { PwaInstallBanner } from './components/PwaInstallBanner';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { DashboardView } from './components/DashboardView';
 import { LiveMonitoringView } from './components/LiveMonitoringView';
 import { LaporanView } from './components/LaporanView';
@@ -45,6 +47,7 @@ import { ProfilView } from './components/ProfilView';
 import { LoginView } from './components/LoginView';
 import { ResetModal } from './components/ResetModal';
 import { ShareAppModal } from './components/ShareAppModal';
+import { ReliefView } from './components/ReliefView';
 
 export default function App() {
   const [session, setSession] = useState<SessionData | null>(null);
@@ -179,9 +182,13 @@ export default function App() {
       }
     }
 
-    // Detect URL Scan Parameters (e.g., from Phone Camera scan ?scan=1JINGGA or ?code=SKK-2026-1JINGGA)
+    // Detect URL Scan Parameters & PWA Home Screen Shortcuts
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam === 'scan-qr') {
+        setCurrentTab('scan-qr');
+      }
       const scanTarget = urlParams.get('scan') || urlParams.get('kelas') || urlParams.get('class') || urlParams.get('qr') || urlParams.get('code');
       if (scanTarget) {
         const cleanTarget = decodeURIComponent(scanTarget).trim();
@@ -199,7 +206,22 @@ export default function App() {
       console.warn('URL param parse error:', e);
     }
 
-    return () => clearInterval(interval);
+    // Automatically sync pending offline records when internet reconnects
+    const handleOnlineReconnect = () => {
+      const pending = StorageService.getPendingSyncCount();
+      StorageService.syncWithCloud().then((res) => {
+        refreshData();
+        if (res.success && pending > 0) {
+          showToast(`Sambungan internet pulih! ${pending} rekod luar talian berjaya diselaraskan ke awan.`, 'success');
+        }
+      });
+    };
+    window.addEventListener('online', handleOnlineReconnect);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('online', handleOnlineReconnect);
+    };
   }, [refreshData, showToast]);
 
   const handleLogin = async (
@@ -332,24 +354,37 @@ export default function App() {
     const dayIndex = now.getDay();
     const currentDay = (dayIndex >= 1 && dayIndex <= 5) ? days[dayIndex - 1] : 'Isnin';
 
-    // Match slot for teacher & class
-    const matching = timetable.find(t => t.kelas === className && (t.guru === currentSession.nama || t.hari === currentDay)) ||
-                     timetable.find(t => t.kelas === className);
+    const toleranceMins = settings?.toleransi_lewat_minit || 5;
+    const timing = evaluateScanTiming(now, toleranceMins, 5);
+    const activeSlotId = timing.activeSlot.id;
+
+    // Match timetable slot accurately for the current active time window first
+    const matching =
+      timetable.find(t => t.hari === currentDay && t.kelas === className && t.slotId === activeSlotId) ||
+      timetable.find(t => t.hari === currentDay && t.kelas === className && t.guru === currentSession.nama) ||
+      timetable.find(t => t.kelas === className && t.guru === currentSession.nama) ||
+      timetable.find(t => t.hari === currentDay && t.kelas === className) ||
+      timetable.find(t => t.kelas === className);
 
     const subjekName = matching ? (subjects.find(s => s.kod === matching.subjek)?.nama || matching.subjek) : 'PdP Utama';
-    const slotId = matching ? matching.slotId : 'S2';
-    const masaLabel = matching?.masa || '07:30 - 08:30';
+    const slotId = timing.isOutsideSchoolHours && matching ? matching.slotId : activeSlotId;
+    const masaLabel = timing.activeSlot.code || matching?.masa || '07:00-07:30';
 
     StorageService.saveAttendanceRecord({
       guru: currentSession.nama,
       kelas: className,
       subjek: subjekName,
       slotId: slotId,
-      status: 'TEPAT MASA',
-      catatan: `Imbasan QR Kelas ${className} (${currentDay} ${masaLabel})`
+      status: timing.status,
+      catatan: `Imbasan QR ${className} (${currentDay} ${masaLabel}) • ${timing.reasonNote}`
     });
     refreshData();
-    showToast(`Kehadiran bagi kelas ${className} (${subjekName}) berjaya direkodkan!`, 'success');
+
+    if (timing.status === 'TEPAT MASA') {
+      showToast(`Kehadiran TEPAT MASA bagi kelas ${className} (${subjekName}) berjaya direkodkan!`, 'success');
+    } else {
+      showToast(`Kehadiran kelas ${className} (${subjekName}) direkodkan (${timing.reasonNote}).`, 'warning');
+    }
     
     const isAdm = currentSession.role === 'admin' || currentSession.role === 'pentadbir' || currentSession.role === 'penyelaras';
     if (isAdm) {
@@ -372,6 +407,7 @@ export default function App() {
       case 'kelas': return 'Pengurusan Kelas';
       case 'subjek': return 'Pengurusan Subjek';
       case 'jadual': return 'Jadual Waktu PdP 2026';
+      case 'relief': return 'Panel Kelas Ganti (Relief)';
       case 'scan-qr': return 'Imbas QR Kelas (PdP)';
       case 'qr': return 'Panel Kod QR Kelas';
       case 'rekod': return 'Rekod Kehadiran PdP';
@@ -385,8 +421,9 @@ export default function App() {
 
   if (!session) {
     return (
-      <div className="min-h-screen font-sans bg-slate-100 antialiased selection:bg-kepawa-500 selection:text-white">
+      <div className="min-h-screen font-sans bg-[#180306] antialiased selection:bg-amber-400 selection:text-[#240509]">
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <OfflineIndicator />
         <TestAccountsModal
           isOpen={isTestAccountsOpen}
           onClose={() => setIsTestAccountsOpen(false)}
@@ -434,9 +471,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans antialiased text-slate-800 selection:bg-kepawa-500 selection:text-white">
+    <div className="min-h-screen bg-[#180306] flex flex-col md:flex-row font-sans antialiased text-amber-50 selection:bg-amber-400 selection:text-[#240509]">
       {/* Toast Overlay */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <OfflineIndicator />
 
       {/* Global Modals */}
       <TestAccountsModal
@@ -538,22 +576,22 @@ export default function App() {
 
           {/* Access Restriction Notice for Non-Admin trying to access restricted views */}
           {session && !isAdmin && currentTab !== 'scan-qr' && currentTab !== 'profil' && (
-            <div className="bg-amber-50 border-2 border-amber-300 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm my-4 max-w-xl mx-auto animate-fade-in">
-              <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-amber-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md">
+            <div className="bg-[#2b060c] border-2 border-amber-400/60 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-[0_0_24px_rgba(245,158,11,0.14)] my-4 max-w-xl mx-auto animate-fade-in">
+              <div className="w-16 h-16 bg-gradient-to-tr from-amber-400 to-amber-500 text-[#240509] rounded-2xl flex items-center justify-center mx-auto shadow-md">
                 <Shield className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase tracking-tight">
+                <h3 className="text-base sm:text-lg font-black text-amber-300 uppercase tracking-tight">
                   AKSES TERHAD KEPADA PENTADBIR SAHAJA
                 </h3>
-                <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                <p className="text-xs text-amber-100/80 mt-1.5 leading-relaxed">
                   Dashboard utama dan pengurusan sistem dihadkan khusus untuk Pentadbir Sekolah (Guru Besar & PK). Pengguna lain (Guru) hanya dibenarkan membuat imbasan Kod QR kehadiran PdP.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setCurrentTab('scan-qr')}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs rounded-2xl shadow-md transition flex items-center gap-2 mx-auto cursor-pointer"
+                className="px-6 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-[#240509] font-black text-xs rounded-2xl shadow-md transition flex items-center gap-2 mx-auto cursor-pointer"
               >
                 <Camera className="w-4 h-4" />
                 <span>Buka Pengimbas Kod QR PdP</span>
@@ -632,12 +670,22 @@ export default function App() {
             />
           )}
 
+          {isAdmin && currentTab === 'relief' && (
+            <ReliefView
+              timetable={timetable}
+              users={users}
+              classes={classes}
+              onShowToast={showToast}
+            />
+          )}
+
           {currentTab === 'scan-qr' && (
             <ScanQrView
               classes={classes}
               session={session}
               onScanSuccess={handleScanSuccess}
               records={attendance}
+              toleransiMinit={settings?.toleransi_lewat_minit || 5}
             />
           )}
 
@@ -703,34 +751,34 @@ export default function App() {
         {session && currentTab !== 'scan-qr' && (
           <button
             onClick={() => setCurrentTab('scan-qr')}
-            className="hidden sm:flex fixed bottom-6 right-6 z-40 bg-gradient-to-r from-gold-500 via-amber-400 to-gold-400 hover:from-gold-400 hover:to-amber-300 text-slate-950 font-black px-4 py-3 rounded-2xl shadow-2xl shadow-gold-500/35 items-center gap-2 border-2 border-white transform hover:scale-105 active:scale-95 transition cursor-pointer group"
+            className="hidden sm:flex fixed bottom-6 right-6 z-40 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-amber-400 text-[#240509] font-black px-4 py-3 rounded-2xl shadow-2xl shadow-amber-500/35 items-center gap-2 border-2 border-amber-200 transform hover:scale-105 active:scale-95 transition cursor-pointer group"
             title="Buka Pengimbas Kod QR Pintu Bilik Darjah"
           >
-            <Camera className="w-5 h-5 text-slate-950 group-hover:rotate-12 transition transform" />
+            <Camera className="w-5 h-5 text-[#240509] group-hover:rotate-12 transition transform" />
             <span className="text-xs tracking-tight">Imbas QR Masuk Kelas</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+            <span className="w-2 h-2 rounded-full bg-emerald-700 animate-ping" />
           </button>
         )}
 
         {/* Mobile Sticky Bottom Navigation Bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 py-2 px-3 flex items-center justify-around z-40 shadow-2xl">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#220409]/95 backdrop-blur-md border-t border-amber-500/35 py-2 px-3 flex items-center justify-around z-40 shadow-2xl">
           {!isAdmin ? (
             <>
               {/* Teacher Only Bottom Nav */}
               <button
                 onClick={() => setCurrentTab('scan-qr')}
                 className={`flex flex-col items-center justify-center gap-1 text-[11px] font-black py-1 px-4 rounded-xl transition ${
-                  currentTab === 'scan-qr' ? 'text-gold-400' : 'text-slate-400 hover:text-slate-200'
+                  currentTab === 'scan-qr' ? 'text-amber-400' : 'text-amber-100/70 hover:text-amber-200'
                 }`}
               >
-                <Camera className="w-5 h-5 text-gold-400" />
+                <Camera className="w-5 h-5 text-amber-400" />
                 <span>Imbas QR PdP</span>
               </button>
 
               <button
                 onClick={() => setCurrentTab('profil')}
                 className={`flex flex-col items-center justify-center gap-1 text-[11px] font-bold py-1 px-4 rounded-xl transition ${
-                  currentTab === 'profil' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                  currentTab === 'profil' ? 'text-amber-400 font-black' : 'text-amber-100/70 hover:text-amber-200'
                 }`}
               >
                 <UserIcon className="w-5 h-5" />
@@ -739,7 +787,7 @@ export default function App() {
 
               <button
                 onClick={() => setIsLogoutOpen(true)}
-                className="flex flex-col items-center justify-center gap-1 text-[11px] font-bold py-1 px-4 rounded-xl text-red-400 hover:text-red-300 transition"
+                className="flex flex-col items-center justify-center gap-1 text-[11px] font-bold py-1 px-4 rounded-xl text-rose-300 hover:text-rose-200 transition"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Keluar</span>
@@ -750,7 +798,7 @@ export default function App() {
               <button
                 onClick={() => setCurrentTab('dashboard')}
                 className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-                  currentTab === 'dashboard' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                  currentTab === 'dashboard' ? 'text-amber-400 font-black' : 'text-amber-100/70 hover:text-amber-200'
                 }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -760,7 +808,7 @@ export default function App() {
               <button
                 onClick={() => setCurrentTab('jadual')}
                 className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-                  currentTab === 'jadual' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                  currentTab === 'jadual' ? 'text-amber-400 font-black' : 'text-amber-100/70 hover:text-amber-200'
                 }`}
               >
                 <CalendarDays className="w-4 h-4" />
@@ -770,7 +818,7 @@ export default function App() {
               {/* Central Prominent Scan Button */}
               <button
                 onClick={() => setCurrentTab('scan-qr')}
-                className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-gold-500 to-amber-400 text-slate-950 p-3 rounded-2xl shadow-xl shadow-gold-500/30 active:scale-95 transition transform border-2 border-slate-950"
+                className="flex flex-col items-center justify-center -mt-5 bg-gradient-to-tr from-amber-500 to-amber-400 text-[#240509] p-3 rounded-2xl shadow-xl shadow-amber-500/35 active:scale-95 transition transform border-2 border-[#220409]"
                 title="Imbas QR Kelas"
               >
                 <Camera className="w-5 h-5" />
@@ -780,7 +828,7 @@ export default function App() {
               <button
                 onClick={() => setCurrentTab('rekod')}
                 className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl transition ${
-                  currentTab === 'rekod' ? 'text-gold-400 font-black' : 'text-slate-400 hover:text-slate-200'
+                  currentTab === 'rekod' ? 'text-amber-400 font-black' : 'text-amber-100/70 hover:text-amber-200'
                 }`}
               >
                 <ClipboardCheck className="w-4 h-4" />
@@ -789,7 +837,7 @@ export default function App() {
 
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl text-slate-400 hover:text-slate-200 transition"
+                className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold py-1 px-2.5 rounded-xl text-amber-100/70 hover:text-amber-200 transition"
               >
                 <MenuIcon className="w-4 h-4" />
                 <span>Menu</span>

@@ -297,7 +297,7 @@ export const TetapanView: React.FC<TetapanViewProps> = ({
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700 uppercase mb-1">Toleransi Lewat (Minit)</label>
+              <label className="block font-bold text-slate-700 uppercase mb-1">Toleransi Ketepatan Masa (Minit)</label>
               <input
                 type="number"
                 min={1}
@@ -307,6 +307,9 @@ export const TetapanView: React.FC<TetapanViewProps> = ({
                 onChange={(e) => setFormData({ ...formData, toleransi_lewat_minit: Number(e.target.value) })}
                 className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:ring-2 focus:ring-kepawa-500"
               />
+              <p className="text-[10px] text-slate-500 mt-1 font-medium">
+                Jarak masa Tepat Masa: 5 minit sebelum (06:55 PG) &amp; {formData.toleransi_lewat_minit || 5} minit selepas jam 7:00 PG.
+              </p>
             </div>
           </div>
 

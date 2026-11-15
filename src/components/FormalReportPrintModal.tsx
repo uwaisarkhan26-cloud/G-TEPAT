@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AttendanceRecord, SystemSettings } from '../types';
 import { SchoolLogo } from './SchoolLogo';
 import { Printer, Download, Filter, X, CheckCircle2, AlertTriangle, FileText, Calendar, Building2, UserCheck } from 'lucide-react';
+import { formatSlotBadgeLabel, sortAttendanceChronologically } from '../utils/attendanceTiming';
 
 interface FormalReportPrintModalProps {
   isOpen: boolean;
@@ -27,20 +28,23 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const filteredRecords = records.filter(r => {
-    // Date filter
-    if (dateFilter === 'today' && r.tarikh !== todayStr) return false;
-    if (dateFilter === 'week' && r.tarikh < sevenDaysAgo) return false;
-    if (dateFilter === 'month' && r.tarikh < thirtyDaysAgo) return false;
+  const filteredRecords = sortAttendanceChronologically(
+    records.filter(r => {
+      // Date filter
+      if (dateFilter === 'today' && r.tarikh !== todayStr) return false;
+      if (dateFilter === 'week' && r.tarikh < sevenDaysAgo) return false;
+      if (dateFilter === 'month' && r.tarikh < thirtyDaysAgo) return false;
 
-    // Status filter
-    if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      // Status filter
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
 
-    // Class filter
-    if (selectedClass !== 'all' && r.kelas !== selectedClass) return false;
+      // Class filter
+      if (selectedClass !== 'all' && r.kelas !== selectedClass) return false;
 
-    return true;
-  });
+      return true;
+    }),
+    'asc'
+  );
 
   const total = filteredRecords.length;
   const tepat = filteredRecords.filter(r => r.status === 'TEPAT MASA').length;
@@ -66,9 +70,9 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
   };
 
   const handleExportCsv = () => {
-    let csv = "data:text/csv;charset=utf-8,Bil,Tarikh,Masa,Nama Guru,Kelas,Mata Pelajaran,Status,Catatan\n";
+    let csv = "data:text/csv;charset=utf-8,Bil,Tarikh,Masa,Slot,Nama Guru,Kelas,Mata Pelajaran,Status,Catatan\n";
     filteredRecords.forEach((r, idx) => {
-      csv += `"${idx + 1}","${r.tarikh}","${r.masa}","${r.guru}","${r.kelas}","${r.subjek}","${r.status}","${r.catatan || '-'}"\n`;
+      csv += `"${idx + 1}","${r.tarikh}","${r.masa}","${formatSlotBadgeLabel(r.slotId)}","${r.guru}","${r.kelas}","${r.subjek}","${r.status}","${r.catatan || '-'}"\n`;
     });
     const encodedUri = encodeURI(csv);
     const link = document.createElement("a");
@@ -215,7 +219,7 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
                   SEKOLAH KEBANGSAAN KEPAWA
                 </h1>
                 <p className="text-[11px] text-slate-600 font-normal mt-0.5">
-                  Peti Surat 123, 89807 Beaufort, Sabah | Kod Sekolah: <span className="font-bold font-mono">XBA0012</span> | Emel: xba0012@moe.edu.my
+                  Peti Surat 367, 89808 Beaufort, Sabah | Kod Sekolah: <span className="font-bold font-mono">{settings.kod_sekolah === 'XBA0012' || !settings.kod_sekolah ? 'XBA6019' : settings.kod_sekolah}</span> | Emel: xba6019@moe.edu.my
                 </p>
                 <div className="mt-1 flex items-center justify-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                   <span>“USAHA JAYA”</span> • <span>SISTEM G-TEPAT (GURU TEPAT, PDP HEBAT)</span>
@@ -284,7 +288,7 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
               </div>
 
               <div className="bg-white p-3 rounded-lg border border-emerald-300">
-                <div className="text-[10px] uppercase font-bold text-emerald-800">Tepat Masa (≤ 5 Min)</div>
+                <div className="text-[10px] uppercase font-bold text-emerald-800">Tepat Masa (±{settings.toleransi_lewat_minit || 5} Min)</div>
                 <div className="text-xl font-black text-emerald-700 mt-0.5">{tepat} Sesi</div>
               </div>
 
@@ -300,7 +304,7 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
             </div>
 
             <p className="text-[11px] text-slate-600 mt-3 italic leading-relaxed">
-              * Nota: Sasaran ketepatan masa kehadiran PdP SK Kepawa adalah sekurang-kurangnya <strong>95.0%</strong> bagi memastikan masa instruksional guru di dalam bilik darjah dioptimumkan sepenuhnya.
+              * Nota: Jarak masa imbasan <strong>Tepat Masa</strong> ialah <strong>5 minit sebelum</strong> hingga <strong>{settings.toleransi_lewat_minit || 5} minit selepas</strong> waktu mula slot (contoh sesi 7.00 pagi: <strong>06:55 – 07:05 PG</strong>). Sasaran ketepatan sekolah ialah sekurang-kurangnya <strong>95.0%</strong>.
             </p>
           </div>
 
@@ -314,12 +318,13 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
               <table className="w-full text-left border-collapse text-[11px]">
                 <thead>
                   <tr className="bg-slate-900 text-white font-bold uppercase text-[10px]">
-                    <th className="p-2 border-r border-slate-700 text-center w-10">BIL</th>
+                    <th className="p-2 border-r border-slate-700 text-center w-9">BIL</th>
                     <th className="p-2 border-r border-slate-700 w-24">TARIKH</th>
                     <th className="p-2 border-r border-slate-700 w-20 text-center">MASA</th>
+                    <th className="p-2 border-r border-slate-700 w-24 text-center">SLOT</th>
                     <th className="p-2 border-r border-slate-700">NAMA GURU</th>
                     <th className="p-2 border-r border-slate-700 w-24 text-center">KELAS</th>
-                    <th className="p-2 border-r border-slate-700 w-32">MATA PELAJARAN</th>
+                    <th className="p-2 border-r border-slate-700 w-28">MATA PELAJARAN</th>
                     <th className="p-2 border-r border-slate-700 w-24 text-center">STATUS</th>
                     <th className="p-2">CATATAN / JUSTIFIKASI</th>
                   </tr>
@@ -327,7 +332,7 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
                 <tbody className="divide-y divide-slate-300">
                   {filteredRecords.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-6 text-center text-slate-500 italic">
+                      <td colSpan={9} className="p-6 text-center text-slate-500 italic">
                         Tiada rekod kehadiran ditemui bagi tapisan yang dipilih.
                       </td>
                     </tr>
@@ -337,6 +342,9 @@ export const FormalReportPrintModal: React.FC<FormalReportPrintModalProps> = ({
                         <td className="p-2 border-r border-slate-300 text-center font-bold">{index + 1}</td>
                         <td className="p-2 border-r border-slate-300 font-mono text-[10px]">{r.tarikh}</td>
                         <td className="p-2 border-r border-slate-300 font-mono text-center text-[10px] font-bold">{r.masa}</td>
+                        <td className="p-2 border-r border-slate-300 font-mono text-center text-[10px] font-semibold text-slate-700">
+                          {formatSlotBadgeLabel(r.slotId)}
+                        </td>
                         <td className="p-2 border-r border-slate-300 font-bold text-slate-900">{r.guru}</td>
                         <td className="p-2 border-r border-slate-300 text-center font-extrabold text-slate-800">{r.kelas}</td>
                         <td className="p-2 border-r border-slate-300 font-medium text-slate-700">{r.subjek}</td>

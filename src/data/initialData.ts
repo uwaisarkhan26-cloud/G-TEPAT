@@ -277,7 +277,7 @@ export interface MasterScheduleItem {
 export const OFFICIAL_MASTER_SCHEDULE: MasterScheduleItem[] = [
   // ===================== ISNIN =====================
   // 1 JINGGA
-  { id: 'ms_isn_1j_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '1 JINGGA', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_1j_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '1 JINGGA', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_1j_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '1 JINGGA', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'ROHIDAH @ NORIDAH BINTI MASLIN', slotIds: ['S2', 'S3'], isCoreItem: true },
   { id: 'ms_isn_1j_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '1 JINGGA', subjek: 'Bahasa Inggeris', subjekKod: 'BI', guru: 'ASNAH BINTI MD DANIL', slotIds: ['S4', 'S5'], isCoreItem: true },
   { id: 'ms_isn_1j_4', hari: 'Isnin', masa: '09:50 - 10:20', kelas: '1 JINGGA', subjek: 'Sains', subjekKod: 'SN', guru: 'ROHIDAH @ NORIDAH BINTI MASLIN', slotIds: ['S6'] },
@@ -285,7 +285,7 @@ export const OFFICIAL_MASTER_SCHEDULE: MasterScheduleItem[] = [
   { id: 'ms_isn_1j_6', hari: 'Isnin', masa: '11:20 - 11:50', kelas: '1 JINGGA', subjek: 'Pendidikan Islam', subjekKod: 'PI', guru: 'NORADILAH BINTI RIBUT', slotIds: ['S9'] },
 
   // 2 BIRU
-  { id: 'ms_isn_2b_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '2 BIRU', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_2b_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '2 BIRU', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_2b_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '2 BIRU', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'NURTITAH BINTI MEMBUAI', slotIds: ['S2', 'S3'] },
   { id: 'ms_isn_2b_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '2 BIRU', subjek: 'Sains', subjekKod: 'SN', guru: 'NORLIANA E BINTI MUSNIN', slotIds: ['S4', 'S5'], isCoreItem: true },
   { id: 'ms_isn_2b_4', hari: 'Isnin', masa: '09:50 - 10:50', kelas: '2 BIRU', subjek: 'Pendidikan Islam', subjekKod: 'PI', guru: 'NORADILAH BINTI RIBUT', slotIds: ['S6', 'S7'] },
@@ -293,14 +293,14 @@ export const OFFICIAL_MASTER_SCHEDULE: MasterScheduleItem[] = [
   { id: 'ms_isn_2b_6', hari: 'Isnin', masa: '11:20 - 11:50', kelas: '2 BIRU', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'NURTITAH BINTI MEMBUAI', slotIds: ['S9'] },
 
   // 3 UNGU
-  { id: 'ms_isn_3u_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '3 UNGU', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_3u_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '3 UNGU', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_3u_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '3 UNGU', subjek: 'Matematik', subjekKod: 'MT', guru: 'NORLIANA E BINTI MUSNIN', slotIds: ['S2', 'S3'] },
   { id: 'ms_isn_3u_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '3 UNGU', subjek: 'Pendidikan Islam', subjekKod: 'PI', guru: 'NORADILAH BINTI RIBUT', slotIds: ['S4', 'S5'], isCoreItem: true },
   { id: 'ms_isn_3u_4', hari: 'Isnin', masa: '09:50 - 10:50', kelas: '3 UNGU', subjek: 'Bahasa Inggeris', subjekKod: 'BI', guru: 'SITI HABIBAH BINTI TAIP', slotIds: ['S6', 'S7'] },
   { id: 'ms_isn_3u_5', hari: 'Isnin', masa: '10:50 - 11:50', kelas: '3 UNGU', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'ROHIDAH @ NORIDAH BINTI MASLIN', slotIds: ['S8', 'S9'] },
 
   // 4 HIJAU
-  { id: 'ms_isn_4h_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '4 HIJAU', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_4h_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '4 HIJAU', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_4h_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '4 HIJAU', subjek: 'Pendidikan Islam', subjekKod: 'PI', guru: 'SITI FAIRUZ BINTI ABD RAHMAN', slotIds: ['S2', 'S3'] },
   { id: 'ms_isn_4h_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '4 HIJAU', subjek: 'Bahasa Inggeris', subjekKod: 'BI', guru: 'KHAYSAR BIN MOHD NOOR', slotIds: ['S4', 'S5'] },
   { id: 'ms_isn_4h_4', hari: 'Isnin', masa: '09:50 - 10:50', kelas: '4 HIJAU', subjek: 'Matematik', subjekKod: 'MT', guru: 'MIMI NUR SHAHERA BINTI HAMINUS', slotIds: ['S6', 'S7'] },
@@ -308,7 +308,7 @@ export const OFFICIAL_MASTER_SCHEDULE: MasterScheduleItem[] = [
   { id: 'ms_isn_4h_6', hari: 'Isnin', masa: '11:50 - 12:50', kelas: '4 HIJAU', subjek: 'Pendidikan Seni Visual', subjekKod: 'PSV', guru: 'NORLIANA E BINTI MUSNIN', slotIds: ['S10', 'S11'] },
 
   // 5 KUNING
-  { id: 'ms_isn_5k_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '5 KUNING', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_5k_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '5 KUNING', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_5k_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '5 KUNING', subjek: 'Matematik', subjekKod: 'MT', guru: 'MIMI NUR SHAHERA BINTI HAMINUS', slotIds: ['S2', 'S3'] },
   { id: 'ms_isn_5k_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '5 KUNING', subjek: 'Bahasa Inggeris', subjekKod: 'BI', guru: 'SITI HABIBAH BINTI TAIP', slotIds: ['S4', 'S5'] },
   { id: 'ms_isn_5k_4', hari: 'Isnin', masa: '09:50 - 10:50', kelas: '5 KUNING', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'DAYANG SABARIAH @ MILAH BINTI JOAS', slotIds: ['S6', 'S7'] },
@@ -316,7 +316,7 @@ export const OFFICIAL_MASTER_SCHEDULE: MasterScheduleItem[] = [
   { id: 'ms_isn_5k_6', hari: 'Isnin', masa: '11:50 - 12:50', kelas: '5 KUNING', subjek: 'Sains', subjekKod: 'SN', guru: 'ASNAH BINTI MD DANIL', slotIds: ['S10', 'S11'] },
 
   // 6 MERAH
-  { id: 'ms_isn_6m_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '6 MERAH', subjek: 'Perhimpunan', subjekKod: 'P', guru: 'MOHD ZAHARI BIN TIBIN', slotIds: ['S1'] },
+  { id: 'ms_isn_6m_1', hari: 'Isnin', masa: '07:00 - 07:30', kelas: '6 MERAH', subjek: 'Perhimpunan', subjekKod: 'P', guru: '', slotIds: ['S1'] },
   { id: 'ms_isn_6m_2', hari: 'Isnin', masa: '07:30 - 08:30', kelas: '6 MERAH', subjek: 'Bahasa Melayu', subjekKod: 'BM', guru: 'DAYANG SABARIAH @ MILAH BINTI JOAS', slotIds: ['S2', 'S3'] },
   { id: 'ms_isn_6m_3', hari: 'Isnin', masa: '08:30 - 09:30', kelas: '6 MERAH', subjek: 'Bahasa Arab', subjekKod: 'BA', guru: 'NORMAWATI BINTI ISMAIL', slotIds: ['S4', 'S5'] },
   { id: 'ms_isn_6m_4', hari: 'Isnin', masa: '09:50 - 10:50', kelas: '6 MERAH', subjek: 'Bahasa Inggeris', subjekKod: 'BI', guru: 'KHAYSAR BIN MOHD NOOR', slotIds: ['S6', 'S7'] },
@@ -557,7 +557,7 @@ export const getInitialAttendance = (): AttendanceRecord[] => {
 
 export const INITIAL_SETTINGS: SystemSettings = {
   nama_sekolah: 'SEKOLAH KEBANGSAAN KEPAWA',
-  kod_sekolah: 'XBA0012',
+  kod_sekolah: 'XBA6019',
   daerah: 'BEAUFORT',
   negeri: 'SABAH',
   tahun_sesi: '2026',

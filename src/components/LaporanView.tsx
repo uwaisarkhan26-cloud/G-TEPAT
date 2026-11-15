@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { AttendanceRecord, SystemSettings } from '../types';
 import { SchoolLogo } from './SchoolLogo';
+import { formatSlotBadgeLabel, sortAttendanceChronologically } from '../utils/attendanceTiming';
 
 interface LaporanViewProps {
   records: AttendanceRecord[];
@@ -40,12 +41,15 @@ export const LaporanView: React.FC<LaporanViewProps> = ({
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-  const filteredRecords = records.filter(r => {
-    if (selectedPeriod === 'today') return r.tarikh === todayStr;
-    if (selectedPeriod === 'week') return r.tarikh >= sevenDaysAgo;
-    if (selectedPeriod === 'month') return r.tarikh >= thirtyDaysAgo;
-    return true;
-  });
+  const filteredRecords = sortAttendanceChronologically(
+    records.filter(r => {
+      if (selectedPeriod === 'today') return r.tarikh === todayStr;
+      if (selectedPeriod === 'week') return r.tarikh >= sevenDaysAgo;
+      if (selectedPeriod === 'month') return r.tarikh >= thirtyDaysAgo;
+      return true;
+    }),
+    'desc'
+  );
 
   const total = filteredRecords.length;
   const tepatMasa = filteredRecords.filter(r => r.status === 'TEPAT MASA').length;
@@ -53,9 +57,9 @@ export const LaporanView: React.FC<LaporanViewProps> = ({
   const peratus = total > 0 ? Math.round((tepatMasa / total) * 100) : 100;
 
   const handleExportCsv = () => {
-    let csv = "data:text/csv;charset=utf-8,Bil,Tarikh,Masa,Nama Guru,Kelas,Mata Pelajaran,Status,Catatan\n";
+    let csv = "data:text/csv;charset=utf-8,Bil,Tarikh,Masa,Slot,Nama Guru,Kelas,Mata Pelajaran,Status,Catatan\n";
     filteredRecords.forEach((r, idx) => {
-      csv += `"${idx + 1}","${r.tarikh}","${r.masa}","${r.guru}","${r.kelas}","${r.subjek}","${r.status}","${r.catatan || '-'}"\n`;
+      csv += `"${idx + 1}","${r.tarikh}","${r.masa}","${formatSlotBadgeLabel(r.slotId)}","${r.guru}","${r.kelas}","${r.subjek}","${r.status}","${r.catatan || '-'}"\n`;
     });
     const encodedUri = encodeURI(csv);
     const link = document.createElement("a");
@@ -191,7 +195,9 @@ export const LaporanView: React.FC<LaporanViewProps> = ({
           <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
             <div className="text-xs text-emerald-800 font-bold uppercase tracking-wider">Tepat Masa</div>
             <div className="text-3xl font-black text-emerald-700 mt-1">{tepatMasa} Kes</div>
-            <div className="text-[11px] text-emerald-600 mt-1">Mengikut toleransi 5 minit</div>
+            <div className="text-[11px] text-emerald-600 mt-1">
+              Jarak masa ±{settings.toleransi_lewat_minit || 5} minit (06:55–07:05 PG)
+            </div>
           </div>
 
           <div className="p-5 rounded-2xl bg-amber-50 border border-amber-200 text-center">
@@ -267,8 +273,13 @@ export const LaporanView: React.FC<LaporanViewProps> = ({
                     <td className="p-3.5 pl-5 font-bold text-slate-400">{index + 1}</td>
                     <td className="p-3.5">
                       <div className="font-bold text-slate-900">{r.tarikh}</div>
-                      <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3 text-slate-400" /> {r.masa}
+                      <div className="text-[10px] text-slate-400 font-mono flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" /> {r.masa}
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-semibold">
+                          {formatSlotBadgeLabel(r.slotId)}
+                        </span>
                       </div>
                     </td>
                     <td className="p-3.5 font-bold text-slate-800">{r.guru}</td>

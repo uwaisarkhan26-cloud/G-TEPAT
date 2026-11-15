@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { AttendanceRecord, ClassItem, SubjectItem, User, SessionData } from '../types';
 import { StorageService } from '../services/storageService';
+import { formatSlotBadgeLabel, sortAttendanceChronologically } from '../utils/attendanceTiming';
 
 interface RekodViewProps {
   records: AttendanceRecord[];
@@ -72,23 +73,26 @@ export const RekodView: React.FC<RekodViewProps> = ({
   const [editStatus, setEditStatus] = useState<'TEPAT MASA' | 'LEWAT'>('TEPAT MASA');
   const [editCatatan, setEditCatatan] = useState('');
 
-  const filteredRecords = records.filter(r => {
-    if (viewScope === 'mine' && r.guru !== session.nama) return false;
-    if (selectedStatus !== 'all' && r.status !== selectedStatus) return false;
-    if (selectedClass !== 'all' && r.kelas !== selectedClass) return false;
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase();
-      const matchGuru = r.guru.toLowerCase().includes(q);
-      const matchKelas = r.kelas.toLowerCase().includes(q);
-      const matchSubjek = r.subjek.toLowerCase().includes(q);
-      const matchCatatan = (r.catatan || '').toLowerCase().includes(q);
-      const matchTarikh = r.tarikh.includes(q);
-      if (!matchGuru && !matchKelas && !matchSubjek && !matchCatatan && !matchTarikh) {
-        return false;
+  const filteredRecords = sortAttendanceChronologically(
+    records.filter(r => {
+      if (viewScope === 'mine' && r.guru !== session.nama) return false;
+      if (selectedStatus !== 'all' && r.status !== selectedStatus) return false;
+      if (selectedClass !== 'all' && r.kelas !== selectedClass) return false;
+      if (searchQuery.trim() !== '') {
+        const q = searchQuery.toLowerCase();
+        const matchGuru = r.guru.toLowerCase().includes(q);
+        const matchKelas = r.kelas.toLowerCase().includes(q);
+        const matchSubjek = r.subjek.toLowerCase().includes(q);
+        const matchCatatan = (r.catatan || '').toLowerCase().includes(q);
+        const matchTarikh = r.tarikh.includes(q);
+        if (!matchGuru && !matchKelas && !matchSubjek && !matchCatatan && !matchTarikh) {
+          return false;
+        }
       }
-    }
-    return true;
-  });
+      return true;
+    }),
+    'desc'
+  );
 
   const handleTriggerRefresh = () => {
     setLocalRefreshing(true);
@@ -404,8 +408,13 @@ export const RekodView: React.FC<RekodViewProps> = ({
                   <tr key={r.id} className="hover:bg-slate-50 transition group">
                     <td className="p-3.5 pl-5">
                       <div className="font-bold text-slate-900">{r.tarikh}</div>
-                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3 text-slate-400" /> {r.masa}
+                      <div className="text-[10px] text-slate-500 font-mono flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" /> {r.masa}
+                        </span>
+                        <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">
+                          {formatSlotBadgeLabel(r.slotId)}
+                        </span>
                       </div>
                     </td>
                     <td className="p-3.5 font-black text-slate-900">{r.guru}</td>
